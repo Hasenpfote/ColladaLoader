@@ -20,6 +20,10 @@ bool Scene::load(domVisual_scene* dom_visual_scene){
 		if(!load(dae_db, dom_visual_scene->getNode_array().get(i), NULL))
 			return false;
 	}
+#if 1
+	if(root)
+		root->update();
+#endif
 	return true;
 }
 
@@ -83,9 +87,12 @@ bool Scene::load(daeDatabase* dae_db, domNode* dom_node, const char* parent){
 }
 
 bool Scene::load(daeDatabase* dae_db, domInstance_node* dom_inst_node, const char* parent){
-	domNode* dom_node = findGeometryNode(dae_db, 0, dom_inst_node->getUrl().fragment().c_str());
-	if(!dom_node)
+	const char* type = dom_inst_node->getUrl().fragment().c_str();
+	domNode* dom_node;
+	if(const_cast<daeDatabase*>(dae_db)->getElement((daeElement**)&dom_node, 0, type, "node") != DAE_OK)
 		return false;
+	if(!isGeometryNode(dom_node))
+		return true;
 
 	std::string name;
 	name.append(parent);
