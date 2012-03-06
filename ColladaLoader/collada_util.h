@@ -21,6 +21,7 @@ size_t countGeometryNode(const daeDatabase* dae_db, const domNode* dom_node);
 size_t countNode(const domVisual_scene* dom_visual_scene);
 size_t countGeometryNode(const domVisual_scene* dom_visual_scene);
 bool isTransformationElement(domElement* dom_elem);
+bool isTransformationElement(TransformationElementType type);
 TransformationElementType getTransformationType(domElement* dom_elem);
 
 } // namespace collada

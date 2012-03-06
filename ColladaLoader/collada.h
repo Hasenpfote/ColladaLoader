@@ -67,10 +67,17 @@ public:
 	~Node();
 	void cleanup();
 	bool load(domNode* dom_node);
-	bool load(const daeElementRefArray&);
 	void addSibling(Node* sibling);
 	void addChild(Node* child);
 	void update();
+private:
+	bool load(const daeElementRefArray&);
+	void load(TransformationElement*, const domLookat*);
+	void load(TransformationElement*, const domMatrix*);
+	void load(TransformationElement*, const domRotate*);
+	void load(TransformationElement*, const domScale*);
+	void load(TransformationElement*, const domSkew*);
+	void load(TransformationElement*, const domTranslate*);
 #ifdef DEBUG
 public:
 	std::string name;	// for debug
@@ -79,6 +86,7 @@ private:
 	Node* sibling;
 	Node* child;
 	unsigned int uid;
+	std::vector<TransformationElement*> trans_elems;
 	std::vector<InstanceGeometry*> inst_geometries;
 };
 

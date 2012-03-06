@@ -181,75 +181,109 @@ Node::Node(){
 }
 
 Node::~Node(){
-	std::vector<InstanceGeometry*>::iterator it = inst_geometries.begin();
-	while(it != inst_geometries.end()){
+	for(std::vector<TransformationElement*>::iterator it = trans_elems.begin(); it != trans_elems.end(); it++){
 		delete (*it);
-		it++;
+	}
+	for(std::vector<InstanceGeometry*>::iterator it = inst_geometries.begin(); it != inst_geometries.end(); it++){
+		delete (*it);
 	}
 }
 
 void Node::cleanup(){
-	std::vector<InstanceGeometry*>::iterator it = inst_geometries.begin();
-	while(it != inst_geometries.end()){
+	for(std::vector<TransformationElement*>::iterator it = trans_elems.begin(); it != trans_elems.end(); it++){
 		delete (*it);
 		(*it) = NULL;
-		it++;
+	}
+	trans_elems.clear();
+	for(std::vector<InstanceGeometry*>::iterator it = inst_geometries.begin(); it != inst_geometries.end(); it++){
+		delete (*it);
+		(*it) = NULL;
 	}
 	inst_geometries.clear();
 }
 
 bool Node::load(const daeElementRefArray& dae_elem_ref_array){
+	bool result = false;
 	size_t cont_count = dae_elem_ref_array.getCount();
 	for(size_t i = 0; i < cont_count; i++){
 		daeElement* dae_elem = dae_elem_ref_array.get(i);
-		TransformationElement trans;
-		trans.type = getTransformationType(dae_elem);
-		switch(trans.type){
+		TransformationElementType type = getTransformationType(dae_elem);
+		if(!isTransformationElement(type))
+			continue;
+
+		TransformationElement* trans_elem;
+		try{
+			trans_elem = new TransformationElement;
+			trans_elem->type = type;
+			trans_elems.push_back(trans_elem);
+		}
+		catch(std::bad_alloc& e){
+			goto finish;
+		}
+
+		switch(type){
 		case TransformationElement_Lookat:
-			{
-				domLookat* dom_lookat = dynamic_cast<domLookat*>(dae_elem);
-			}
+			load(trans_elem, dynamic_cast<domLookat*>(dae_elem));
 			break;
 		case TransformationElement_Matrix:
-			{
-				domMatrix* dom_mtx = dynamic_cast<domMatrix*>(dae_elem);
-			}
+			load(trans_elem, dynamic_cast<domMatrix*>(dae_elem));
 			break;
 		case TransformationElement_Rotate:
-			{
-				domRotate* dom_rot = dynamic_cast<domRotate*>(dae_elem);
-				float x = dom_rot->getValue().get(0);
-				float y = dom_rot->getValue().get(1);
-				float z = dom_rot->getValue().get(2);
-				float w = dom_rot->getValue().get(3);
-			}
+			load(trans_elem, dynamic_cast<domRotate*>(dae_elem));
 			break;
 		case TransformationElement_Scale:
-			{
-				domScale* dom_trans = dynamic_cast<domScale*>(dae_elem);
-				float x = dom_trans->getValue().get(0);
-				float y = dom_trans->getValue().get(1);
-				float z = dom_trans->getValue().get(2);
-			}
+			load(trans_elem, dynamic_cast<domScale*>(dae_elem));
 			break;
 		case TransformationElement_Skew:
-			{
-				domSkew* dom_mtx = dynamic_cast<domSkew*>(dae_elem);
-			}
+			load(trans_elem, dynamic_cast<domSkew*>(dae_elem));
 			break;
 		case TransformationElement_Translate:
-			{
-				domTranslate* dom_trans = dynamic_cast<domTranslate*>(dae_elem);
-				float x = dom_trans->getValue().get(0);
-				float y = dom_trans->getValue().get(1);
-				float z = dom_trans->getValue().get(2);
-			}
+			load(trans_elem, dynamic_cast<domTranslate*>(dae_elem));
 			break;
 		default:
 			break;
 		}
 	}
-	return true;
+	result = true;
+finish:
+	if(!result)
+		cleanup();
+	return result;
+}
+void Node::load(TransformationElement* tarns_elem, const domLookat* dom_lookat){
+	size_t count = dom_lookat->getValue().getCount();
+	for(size_t i = 0; i < count; i++)
+		tarns_elem->lookat[i] = dom_lookat->getValue().get(i);
+}
+
+void Node::load(TransformationElement* tarns_elem, const domMatrix* dom_matrix){
+	size_t count = dom_matrix->getValue().getCount();
+	for(size_t i = 0; i < count; i++)
+		tarns_elem->matrix[i] = dom_matrix->getValue().get(i);
+}
+
+void Node::load(TransformationElement* tarns_elem, const domRotate* dom_rotate){
+	size_t count = dom_rotate->getValue().getCount();
+	for(size_t i = 0; i < count; i++)
+		tarns_elem->rotate[i] = dom_rotate->getValue().get(i);
+}
+
+void Node::load(TransformationElement* tarns_elem, const domScale* dom_scale){
+	size_t count = dom_scale->getValue().getCount();
+	for(size_t i = 0; i < count; i++)
+		tarns_elem->scale[i] = dom_scale->getValue().get(i);
+}
+
+void Node::load(TransformationElement* tarns_elem, const domSkew* dom_skew){
+	size_t count = dom_skew->getValue().getCount();
+	for(size_t i = 0; i < count; i++)
+		tarns_elem->skew[i] = dom_skew->getValue().get(i);
+}
+
+void Node::load(TransformationElement* tarns_elem, const domTranslate* dom_trans){
+	size_t count = dom_trans->getValue().getCount();
+	for(size_t i = 0; i < count; i++)
+		tarns_elem->translate[i] = dom_trans->getValue().get(i);
 }
 
 bool Node::load(domNode* dom_node){
@@ -273,7 +307,7 @@ bool Node::load(domNode* dom_node){
 	}
 	result = true;
 finish:
-	if(result)
+	if(!result)
 		cleanup();
 	return result;
 }
