@@ -15,7 +15,7 @@ bool VertexInput::load(domInstance_material::domBind_vertex_input* dom_bind_vert
 
 ////////////////////////////////////////////////////////////////////////////////
 
-InstanceMaterial::~InstanceMaterial(){
+Material::~Material(){
 	std::vector<VertexInput*>::iterator it = vis.begin();
 	while(it != vis.end()){
 		delete (*it);
@@ -23,9 +23,7 @@ InstanceMaterial::~InstanceMaterial(){
 	}
 }
 
-void InstanceMaterial::cleanup(){
-	symbol.clear();
-	target.clear();
+void Material::cleanup(){
 	std::vector<VertexInput*>::iterator it = vis.begin();
 	while(it != vis.end()){
 		delete (*it);
@@ -35,10 +33,26 @@ void InstanceMaterial::cleanup(){
 	vis.clear();
 }
 
-bool InstanceMaterial::load(domInstance_material* dom_inst_mtrl){
+bool Material::load(domInstance_material* dom_inst_mtrl){
 	bool result = false;
-	symbol.append(dom_inst_mtrl->getSymbol());
-	target.append(dom_inst_mtrl->getTarget().fragment().c_str());
+	const char* target = dom_inst_mtrl->getTarget().fragment().c_str();
+#if 0
+	daeDatabase* dae_db = dom_inst_mtrl->getDAE()->getDatabase();
+	// <library_materials>
+	domMaterial* dom_mtrl;
+	if(dae_db->getElement((daeElement**)&dom_mtrl, 0, target, "material") != DAE_OK)
+		goto finish;
+	domInstance_effect* dom_inst_effect = dom_mtrl->getInstance_effect();
+	if(!dom_inst_effect)
+		goto finish;
+	// <library_effects>
+	const char* url = dom_inst_effect->getUrl().fragment().c_str();
+	domEffect* dom_effect;
+	if(dae_db->getElement((daeElement**)&dom_effect, 0, target, "effect") != DAE_OK)
+		goto finish;
+	// ToDo: マテリアルを展開する
+
+#endif	
 	// <bind_vertex_input>
 	size_t vi_count = dom_inst_mtrl->getBind_vertex_input_array().getCount();
 	for(size_t i = 0; i < vi_count; i++){
@@ -62,66 +76,30 @@ finish:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-BindMateral::~BindMateral(){
-	std::vector<InstanceMaterial*>::iterator it = inst_materials.begin();
-	while(it != inst_materials.end()){
-		delete (*it);
-		it++;
-	}
-}
-
-void BindMateral::cleanup(){
-	std::vector<InstanceMaterial*>::iterator it = inst_materials.begin();
-	while(it != inst_materials.end()){
-		delete (*it);
-		(*it) = NULL;
-		it++;
-	}
-	inst_materials.clear();
-}
-
-bool BindMateral::load(domBind_material* dom_bind_mtrl){
-	bool result = false;
-	// <technique_common>		
-	domBind_material::domTechnique_common* dom_tech_common = dom_bind_mtrl->getTechnique_common();
-	// <instance_material>
-	size_t mtrl_count = dom_tech_common->getInstance_material_array().getCount();
-	for(size_t i = 0; i < mtrl_count; i++){
-		domInstance_material* dom_inst_mtrl = dom_tech_common->getInstance_material_array().get(i);
-		try{
-			InstanceMaterial* inst_mtrl = new InstanceMaterial;
-			inst_materials.push_back(inst_mtrl);
-			if(!inst_mtrl->load(dom_inst_mtrl))
-				goto finish;
-		}
-		catch(std::bad_alloc& e){
-			goto finish;
-		}
-	}
-	result = true;
-finish:
-	if(!result)
-		cleanup();
-	return result;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 InstanceGeometry::InstanceGeometry(){
-	bind_material = NULL;
 }
 
 InstanceGeometry::~InstanceGeometry(){
-	if(bind_material)
-		delete bind_material;
+	std::map<unsigned int, Material*>::iterator it = bind_material.begin();
+	while(it != bind_material.end()){
+		if(it->second){
+			delete it->second;
+		}
+		it++;
+	}
 }
 
 void InstanceGeometry::cleanup(){
 	url.clear();
-	if(bind_material){
-		delete bind_material;
-		bind_material = NULL;
+	std::map<unsigned int, Material*>::iterator it = bind_material.begin();
+	while(it != bind_material.end()){
+		if(it->second){
+			delete it->second;
+			it->second = NULL;
+		}
+		it++;
 	}
+	bind_material.clear();
 }
 
 bool InstanceGeometry::load(domInstance_geometry* dom_inst_geom){
@@ -131,9 +109,35 @@ bool InstanceGeometry::load(domInstance_geometry* dom_inst_geom){
 	// <bind_material>
 	domBind_material* dom_bind_mtrl = dom_inst_geom->getBind_material();
 	if(dom_bind_mtrl){
+		if(!load(dom_bind_mtrl))
+			goto finish;
+	}
+	result = true;
+finish:
+	if(!result)
+		cleanup();
+	return result;
+}
+
+bool InstanceGeometry::load(domBind_material* dom_bind_mtrl){
+	bool result = false;
+	// <technique_common>		
+	domBind_material::domTechnique_common* dom_tech_common = dom_bind_mtrl->getTechnique_common();
+	// <instance_material>
+	size_t mtrl_count = dom_tech_common->getInstance_material_array().getCount();
+	for(size_t i = 0; i < mtrl_count; i++){
+		domInstance_material* dom_inst_mtrl = dom_tech_common->getInstance_material_array().get(i);
 		try{
-			bind_material = new BindMateral;
-			if(!bind_material->load(dom_bind_mtrl))
+			Material* mtrl = new Material;
+#ifdef DEBUG
+			mtrl->symbol.append(dom_inst_mtrl->getSymbol());
+#endif
+			unsigned int id = calcCRC32(reinterpret_cast<const unsigned char*>(dom_inst_mtrl->getSymbol()));
+			std::pair<unsigned int, Material*> p(id, mtrl);
+			std::map<unsigned int, Material*>::_Pairib pib = bind_material.insert(p);
+			if(!pib.second)
+				goto finish;	// キーが重複している
+			if(!mtrl->load(dom_inst_mtrl))
 				goto finish;
 		}
 		catch(std::bad_alloc& e){
@@ -566,14 +570,19 @@ const Node* Scene::findNode(const char* name) const{
 ////////////////////////////////////////////////////////////////////////////////
 
 Collada::Collada(){
+	scene = NULL;
 }
 
 Collada::~Collada(){
-	std::vector<Scene*>::iterator it = scenes.begin();
-	while(it != scenes.end()){
-		if(*it)
-			delete (*it);
-		it++;
+	if(scene){
+		delete scene;
+	}
+}
+
+void Collada::cleanup(){
+	if(scene){
+		delete scene;
+		scene = NULL;
 	}
 }
 
@@ -590,32 +599,30 @@ bool Collada::load(const char* uri){
 		goto finish;
 	}
 
-	daeDatabase* db = dae->getDatabase();
+	daeDatabase* dae_db = dae->getDatabase();
 
 	// <scene>
 	domCOLLADA::domScene* dom_scene;
-	db->getElement((daeElement**)&dom_scene, 0, NULL, "scene");
+	dae_db->getElement((daeElement**)&dom_scene, 0, NULL, "scene");
 	if(!dom_scene->getInstance_visual_scene()){
 		goto finish;
 	}
+	domInstanceWithExtra* dom_iwe = dom_scene->getInstance_visual_scene();
+	if(!dom_iwe)
+		goto finish;
+	const char* id = dom_iwe->getUrl().fragment().c_str();
+	domVisual_scene* dom_vis_scn;
+	if(dae_db->getElement((daeElement**)&dom_vis_scn, 0, id, "visual_scene") != DAE_OK)
+		goto finish;
 
-	// <library_visual_scenes>
-	domLibrary_visual_scenes* dom_visual_scenes;
-	db->getElement((daeElement**)&dom_visual_scenes, 0, NULL, "library_visual_scenes");
-	size_t vs_count = dom_visual_scenes->getVisual_scene_array().getCount();
-	for(size_t i = 0; i < vs_count; i++){
-		domVisual_scene* dom_visual_scene = dom_visual_scenes->getVisual_scene_array().get(i);
-		try{
-			Scene* scene = new Scene;
-			scenes.push_back(scene);
-			if(!scene->load(dom_visual_scene))
-				goto finish;
-		}
-		catch(std::bad_alloc& e){
+	try{
+		scene = new Scene;
+		if(!scene->load(dom_vis_scn))
 			goto finish;
-		}
 	}
-
+	catch(std::bad_alloc& e){
+		goto finish;
+	}
 	result = true;
 finish:
 	if(!result)
@@ -625,26 +632,10 @@ finish:
 	return result;
 }
 
-void Collada::cleanup(){
-	std::vector<Scene*>::iterator it = scenes.begin();
-	while(it != scenes.end()){
-		if(*it)
-			delete (*it);
-		it++;
-	}
-	scenes.clear();
-}
-
 Node* Collada::findNode(const char* name){
-	Node* node = NULL;
-	std::vector<Scene*>::iterator it = scenes.begin();
-	while(it != scenes.end()){
-		node = (*it)->findNode(name);
-		if(node)
-			break;
-		it++;
-	}
-	return node;
+	if(scene)
+		return scene->findNode(name);
+	return NULL;
 }
 
 const Node* Collada::findNode(const char* name) const{

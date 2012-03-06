@@ -11,30 +11,23 @@ namespace collada{
 class VertexInput{
 public:
 	bool load(domInstance_material::domBind_vertex_input*);
-public:
-	std::string semantic;
-	std::string input_semantic;
+private:
+	std::string semantic;			// ここら辺は将来的にハッシュ値に
+	std::string input_semantic;		// ここら辺は将来的にハッシュ値に
 	unsigned int set;
 };
 
-class InstanceMaterial{
+class Material{
 public:
-	~InstanceMaterial();
+	~Material();
 	void cleanup();
 	bool load(domInstance_material*);
+#ifdef DEBUG
 public:
-	std::string symbol;
-	std::string target;
+	std::string symbol;	 // for debug
+#endif
+private:
 	std::vector<VertexInput*> vis;	// std::map にするか？キーはsemantic
-};
-
-class BindMateral{
-public:
-	~BindMateral();
-	void cleanup();
-	bool load(domBind_material*);
-public:
-	std::vector<InstanceMaterial*> inst_materials;
 };
 
 class InstanceGeometry{
@@ -43,9 +36,11 @@ public:
 	~InstanceGeometry();
 	void cleanup();
 	bool load(domInstance_geometry*);
+private:
+	bool load(domBind_material* dom_bind_mtrl);
 public:
 	std::string url;
-	BindMateral* bind_material;
+	std::map<unsigned int, Material*> bind_material;
 };
 
 typedef struct{
@@ -133,7 +128,7 @@ public:
 	const Node* findNode(const char* name) const;
 private:
 	void cleanup();
-	std::vector<Scene*> scenes;
+	Scene* scene;
 };
 
 } // namespace collada
