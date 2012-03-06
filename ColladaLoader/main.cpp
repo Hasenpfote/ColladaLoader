@@ -1,7 +1,7 @@
 ﻿#include "collada.h"
 
 void main(void){
-	Collada collada;
+	collada::Collada collada;
 	collada.load("mone/mone.dae");
 
 }

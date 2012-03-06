@@ -1,5 +1,7 @@
 ﻿#include "collada_util.h"
 
+namespace collada{
+
 /**
  * ジオメトリノードか
  */
@@ -92,3 +94,52 @@ size_t countGeometryNode(const domVisual_scene* dom_visual_scene){
 	}
 	return sum;
 }
+
+/**
+ * エレメントが変換要素か
+ */
+bool isTransformationElement(domElement* dom_elem){
+	const char* type = dom_elem->getTypeName();
+	if(strcmp(type, "Lookat") == 0)
+		return true;
+	if(strcmp(type, "matrix") == 0)
+		return true;
+	if(strcmp(type, "rotate") == 0)
+		return true;
+	if(strcmp(type, "scale") == 0)
+		return true;
+	if(strcmp(type, "skew") == 0)
+		return true;
+	if(strcmp(type, "translate") == 0)
+		return true;
+	return false;
+}
+
+bool isTransformationElement(TransformationElementType type){
+	if((type == TransformationElement_Unknown)
+	 ||(type == TransformationElement_Size))
+		return false;
+	return true;
+}
+
+/**
+ * エレメントをTransformationElementType列挙で返す
+ */
+TransformationElementType getTransformationType(domElement* dom_elem){
+	const char* type = dom_elem->getTypeName();
+	if(strcmp(type, "Lookat") == 0)
+		return TransformationElement_Lookat;
+	if(strcmp(type, "matrix") == 0)
+		return TransformationElement_Matrix;
+	if(strcmp(type, "rotate") == 0)
+		return TransformationElement_Rotate;
+	if(strcmp(type, "scale") == 0)
+		return TransformationElement_Scale;
+	if(strcmp(type, "skew") == 0)
+		return TransformationElement_Skew;
+	if(strcmp(type, "translate") == 0)
+		return TransformationElement_Translate;
+	return TransformationElement_Unknown;
+}
+
+} // namespace collada

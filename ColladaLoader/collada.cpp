@@ -2,6 +2,151 @@
 #include "crc32.h"
 #include "log.h"
 
+namespace collada{
+
+////////////////////////////////////////////////////////////////////////////////
+
+bool VertexInput::load(domInstance_material::domBind_vertex_input* dom_bind_vert_input){
+	semantic.append(dom_bind_vert_input->getSemantic());
+	input_semantic.append(dom_bind_vert_input->getInput_semantic());
+	set = dom_bind_vert_input->getInput_set();
+	return true;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+InstanceMaterial::~InstanceMaterial(){
+	std::vector<VertexInput*>::iterator it = vis.begin();
+	while(it != vis.end()){
+		delete (*it);
+		it++;
+	}
+}
+
+void InstanceMaterial::cleanup(){
+	symbol.clear();
+	target.clear();
+	std::vector<VertexInput*>::iterator it = vis.begin();
+	while(it != vis.end()){
+		delete (*it);
+		(*it) = NULL;
+		it++;
+	}
+	vis.clear();
+}
+
+bool InstanceMaterial::load(domInstance_material* dom_inst_mtrl){
+	bool result = false;
+	symbol.append(dom_inst_mtrl->getSymbol());
+	target.append(dom_inst_mtrl->getTarget().fragment().c_str());
+	// <bind_vertex_input>
+	size_t vi_count = dom_inst_mtrl->getBind_vertex_input_array().getCount();
+	for(size_t i = 0; i < vi_count; i++){
+		domInstance_material::domBind_vertex_input* dom_bind_vert_input = dom_inst_mtrl->getBind_vertex_input_array().get(i);
+		try{
+			VertexInput* vi = new VertexInput;
+			vis.push_back(vi);
+			if(!vi->load(dom_bind_vert_input))
+				goto finish;
+		}
+		catch(std::bad_alloc& e){
+			goto finish;
+		}
+	}
+	result = true;
+finish:
+	if(!result)
+		cleanup();
+	return result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+BindMateral::~BindMateral(){
+	std::vector<InstanceMaterial*>::iterator it = inst_materials.begin();
+	while(it != inst_materials.end()){
+		delete (*it);
+		it++;
+	}
+}
+
+void BindMateral::cleanup(){
+	std::vector<InstanceMaterial*>::iterator it = inst_materials.begin();
+	while(it != inst_materials.end()){
+		delete (*it);
+		(*it) = NULL;
+		it++;
+	}
+	inst_materials.clear();
+}
+
+bool BindMateral::load(domBind_material* dom_bind_mtrl){
+	bool result = false;
+	// <technique_common>		
+	domBind_material::domTechnique_common* dom_tech_common = dom_bind_mtrl->getTechnique_common();
+	// <instance_material>
+	size_t mtrl_count = dom_tech_common->getInstance_material_array().getCount();
+	for(size_t i = 0; i < mtrl_count; i++){
+		domInstance_material* dom_inst_mtrl = dom_tech_common->getInstance_material_array().get(i);
+		try{
+			InstanceMaterial* inst_mtrl = new InstanceMaterial;
+			inst_materials.push_back(inst_mtrl);
+			if(!inst_mtrl->load(dom_inst_mtrl))
+				goto finish;
+		}
+		catch(std::bad_alloc& e){
+			goto finish;
+		}
+	}
+	result = true;
+finish:
+	if(!result)
+		cleanup();
+	return result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+InstanceGeometry::InstanceGeometry(){
+	bind_material = NULL;
+}
+
+InstanceGeometry::~InstanceGeometry(){
+	if(bind_material)
+		delete bind_material;
+}
+
+void InstanceGeometry::cleanup(){
+	url.clear();
+	if(bind_material){
+		delete bind_material;
+		bind_material = NULL;
+	}
+}
+
+bool InstanceGeometry::load(domInstance_geometry* dom_inst_geom){
+	bool result = false;
+	url.append(dom_inst_geom->getUrl().fragment().c_str());
+//	unsigned int id = calcCRC32(reinterpret_cast<const unsigned char*>(dom_inst_geom->getUrl().fragment().c_str()));
+	// <bind_material>
+	domBind_material* dom_bind_mtrl = dom_inst_geom->getBind_material();
+	if(dom_bind_mtrl){
+		try{
+			bind_material = new BindMateral;
+			if(!bind_material->load(dom_bind_mtrl))
+				goto finish;
+		}
+		catch(std::bad_alloc& e){
+			goto finish;
+		}
+	}
+	result = true;
+finish:
+	if(!result)
+		cleanup();
+	return result;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 #define INVALID_ID (unsigned int)-1
@@ -35,11 +180,102 @@ Node::Node(){
 	uid = INVALID_ID;
 }
 
-bool Node::load(domNode* dom_node){
-	
+Node::~Node(){
+	std::vector<InstanceGeometry*>::iterator it = inst_geometries.begin();
+	while(it != inst_geometries.end()){
+		delete (*it);
+		it++;
+	}
+}
 
+void Node::cleanup(){
+	std::vector<InstanceGeometry*>::iterator it = inst_geometries.begin();
+	while(it != inst_geometries.end()){
+		delete (*it);
+		(*it) = NULL;
+		it++;
+	}
+	inst_geometries.clear();
+}
 
+bool Node::load(const daeElementRefArray& dae_elem_ref_array){
+	size_t cont_count = dae_elem_ref_array.getCount();
+	for(size_t i = 0; i < cont_count; i++){
+		daeElement* dae_elem = dae_elem_ref_array.get(i);
+		TransformationElement trans;
+		trans.type = getTransformationType(dae_elem);
+		switch(trans.type){
+		case TransformationElement_Lookat:
+			{
+				domLookat* dom_lookat = dynamic_cast<domLookat*>(dae_elem);
+			}
+			break;
+		case TransformationElement_Matrix:
+			{
+				domMatrix* dom_mtx = dynamic_cast<domMatrix*>(dae_elem);
+			}
+			break;
+		case TransformationElement_Rotate:
+			{
+				domRotate* dom_rot = dynamic_cast<domRotate*>(dae_elem);
+				float x = dom_rot->getValue().get(0);
+				float y = dom_rot->getValue().get(1);
+				float z = dom_rot->getValue().get(2);
+				float w = dom_rot->getValue().get(3);
+			}
+			break;
+		case TransformationElement_Scale:
+			{
+				domScale* dom_trans = dynamic_cast<domScale*>(dae_elem);
+				float x = dom_trans->getValue().get(0);
+				float y = dom_trans->getValue().get(1);
+				float z = dom_trans->getValue().get(2);
+			}
+			break;
+		case TransformationElement_Skew:
+			{
+				domSkew* dom_mtx = dynamic_cast<domSkew*>(dae_elem);
+			}
+			break;
+		case TransformationElement_Translate:
+			{
+				domTranslate* dom_trans = dynamic_cast<domTranslate*>(dae_elem);
+				float x = dom_trans->getValue().get(0);
+				float y = dom_trans->getValue().get(1);
+				float z = dom_trans->getValue().get(2);
+			}
+			break;
+		default:
+			break;
+		}
+	}
 	return true;
+}
+
+bool Node::load(domNode* dom_node){
+	bool result = false;
+	// transformation_elements
+	if(!load(dom_node->getContents()))
+		goto finish;
+	// <instance_geometry>
+	size_t geom_count = dom_node->getInstance_geometry_array().getCount();
+	for(size_t i = 0; i < geom_count; i++){
+		domInstance_geometry* dom_inst_geom = dom_node->getInstance_geometry_array().get(i);
+		try{
+			InstanceGeometry* geom = new InstanceGeometry;
+			inst_geometries.push_back(geom);
+			if(!geom->load(dom_inst_geom))
+				goto finish;
+		}
+		catch(std::bad_alloc& e){
+			goto finish;
+		}
+	}
+	result = true;
+finish:
+	if(result)
+		cleanup();
+	return result;
 }
 
 void Node::addSibling(Node* sibling){
@@ -58,7 +294,9 @@ void Node::addChild(Node* child){
 
 void Node::update(){	// 引数は親の行列
 	// 何か処理
+#ifdef DEBUG
 	printf("node: %s\n", name.c_str());
+#endif
 	if(child)
 		child->update();
 	Node* next = sibling;
@@ -155,26 +393,36 @@ Scene::Scene(){
 Scene::~Scene(){
 }
 
+void Scene::cleanup(){
+	node_bank.free();
+	root = NULL;
+}
+
 bool Scene::load(domVisual_scene* dom_visual_scene){
+	bool result = false;
 	if(!node_bank.alloc(countGeometryNode(dom_visual_scene)))
-		return false;
+		goto finish;
 	daeDatabase* dae_db = dom_visual_scene->getDAE()->getDatabase();
 	size_t node_count = dom_visual_scene->getNode_array().getCount();
 	for(size_t i = 0; i < node_count; i++){
 		if(!load(dae_db, dom_visual_scene->getNode_array().get(i), NULL))
-			return false;
+			goto finish;
 	}
-#if 1
+#ifdef DEBUG
 	if(root)
 		root->update();
 #endif
-	return true;
+	result = true;
+finish:
+	if(!result)
+		cleanup();
+	return result;
 }
 
 bool Scene::load(daeDatabase* dae_db, domNode* dom_node, const char* parent){
 	if(!isGeometryNode(dom_node))
 		return true;
-#if 1
+#ifdef DEBUG
 	std::string myname;
 #endif
 	unsigned int id;
@@ -187,14 +435,14 @@ bool Scene::load(daeDatabase* dae_db, domNode* dom_node, const char* parent){
 		name.append("\0");
 		id = calcCRC32(reinterpret_cast<const unsigned char*>(name.c_str()));
 		pid = calcCRC32(reinterpret_cast<const unsigned char*>(parent));
-#if 1
+#ifdef DEBUG
 		myname.append(name);
 #endif
 	}else{
 		id = calcCRC32(reinterpret_cast<const unsigned char*>(dom_node->getID()));
 		const daeElement* dae_element = dom_node->getParent();
 		pid = calcCRC32(reinterpret_cast<const unsigned char*>(dae_element->getID()));
-#if 1
+#ifdef DEBUG
 		myname.append(dom_node->getID());
 		myname.append("\0");
 #endif
@@ -202,7 +450,7 @@ bool Scene::load(daeDatabase* dae_db, domNode* dom_node, const char* parent){
 	Node* node = node_bank.create(id);
 	if(!node->load(dom_node))
 		return false;
-#if 1
+#ifdef DEBUG
 	node->name.append(myname);
 #endif
 	Node* pnode = node_bank.find(pid);
@@ -247,7 +495,7 @@ bool Scene::load(daeDatabase* dae_db, domInstance_node* dom_inst_node, const cha
 	Node* node = node_bank.create(id);
 	if(!node->load(dom_node))
 		return false;
-#if 1
+#ifdef DEBUG
 	node->name.append(name);
 #endif
 	unsigned int pid = calcCRC32(reinterpret_cast<const unsigned char*>(parent));
@@ -328,14 +576,6 @@ bool Collada::load(const char* uri){
 			scenes.push_back(scene);
 			if(!scene->load(dom_visual_scene))
 				goto finish;
-#if 1
-			Node* node0 = scene->findNode("mone_pose_mqo");
-			Node* node1 = scene->findNode("node1");
-			Node* node2 = scene->findNode("weapon");
-			Node* node3 = scene->findNode("body");
-			int aaa;
-			aaa=0;
-#endif
 		}
 		catch(std::bad_alloc& e){
 			goto finish;
@@ -377,3 +617,4 @@ const Node* Collada::findNode(const char* name) const{
 	return reinterpret_cast<const Node*>(findNode(name));
 }
 
+} // namespace collada
