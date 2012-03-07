@@ -3,32 +3,9 @@
 #include <dom/domCOLLADA.h>
 #include <vector>
 #include "collada_util.h"
+#include "collada_material.h"
 
 namespace collada{
-
-#define DEBUG
-
-class VertexInput{
-public:
-	bool load(domInstance_material::domBind_vertex_input*);
-private:
-	std::string semantic;			// ここら辺は将来的にハッシュ値に
-	std::string input_semantic;		// ここら辺は将来的にハッシュ値に
-	unsigned int set;
-};
-
-class Material{
-public:
-	~Material();
-	void cleanup();
-	bool load(domInstance_material*);
-#ifdef DEBUG
-public:
-	std::string symbol;	 // for debug
-#endif
-private:
-	std::vector<VertexInput*> vis;	// std::map にするか？キーはsemantic
-};
 
 class InstanceGeometry{
 public:

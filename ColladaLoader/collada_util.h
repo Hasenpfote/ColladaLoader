@@ -4,6 +4,8 @@
 
 namespace collada{
 
+#define DEBUG
+
 typedef enum{
 	TransformationElement_Lookat,
 	TransformationElement_Matrix,
