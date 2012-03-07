@@ -142,4 +142,12 @@ TransformationElementType getTransformationType(domElement* dom_elem){
 	return TransformationElement_Unknown;
 }
 
+
+/*
+	domEffect* dom_effect;
+	if(dae_db->getElement((daeElement**)&dom_effect, 0, url, "effect") != DAE_OK)
+
+*/
+
+
 } // namespace collada

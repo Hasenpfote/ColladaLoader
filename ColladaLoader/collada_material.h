@@ -37,7 +37,11 @@ public:
 	public:
 		Sampler();
 	public:
-		//	std::string toTexId;
+	#ifdef DEBUG
+		std::string texture;
+		std::string texcoord;
+		std::string image;
+	#endif
 		WrapMode wrap_s;
 		WrapMode wrap_t;
 		WrapMode wrap_p;

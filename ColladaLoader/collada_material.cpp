@@ -270,6 +270,15 @@ bool Material::load(const domProfile_COMMON::domTechnique::domBlinn* dom_blinn){
 	return true;
 }
 
+static domCommon_newparam_type* find(const domCommon_newparam_type_Array& dom_common_np_type_array, const char* type){
+	const size_t count = dom_common_np_type_array.getCount();
+	for(size_t i = 0; i < count; i++){
+		if(strcmp(type, dom_common_np_type_array.get(i)->getSid()) == 0)
+			return dom_common_np_type_array.get(i);
+	}
+	return NULL;
+}
+
 bool Material::load(Param* param, const domCommon_color_or_texture_type* dom_common_c_or_t_type){
 	if(dom_common_c_or_t_type->getColor()){
 		param->type = Param::Param_Color;
@@ -281,7 +290,52 @@ bool Material::load(Param* param, const domCommon_color_or_texture_type* dom_com
 	else
 	if(dom_common_c_or_t_type->getTexture()){
 		param->type = Param::Param_Texture;
-		// ToDo:
+
+		try{
+			param->sampler = new Sampler;
+		}
+		catch(std::bad_alloc& e){
+			return false;
+		}
+
+		const char* sampler = dom_common_c_or_t_type->getTexture()->getTexture();
+		const char* texcoord = dom_common_c_or_t_type->getTexture()->getTexcoord();
+#ifdef DEBUG
+		param->sampler->texture.clear();
+		param->sampler->texture.append(sampler);
+		param->sampler->texcoord.clear();
+		param->sampler->texcoord.append(texcoord);
+#endif
+		// <constant> or <lambert> or <phong> or <blinn>
+		daeElement* dae_elem = const_cast<domCommon_color_or_texture_type*>(dom_common_c_or_t_type)->getParent();
+		// <technique>
+		dae_elem = dae_elem->getParent();
+		// <profile_COMMON>
+		dae_elem = dae_elem->getParent();
+		const domProfile_COMMON* dom_prof_common = dynamic_cast<domProfile_COMMON*>(dae_elem);
+		// <newparam> for <sampler*>
+		domCommon_newparam_type* dom_newparam_type = find(dom_prof_common->getNewparam_array(), sampler);
+		if(!dom_newparam_type)
+			return false;
+		if(!dom_newparam_type->getSampler2D())	// とりあえずSampler2Dのみ
+			return false;
+		if(!dom_newparam_type->getSampler2D()->getSource())
+			return false;
+		const char* surface = dom_newparam_type->getSampler2D()->getSource()->getValue();
+		// <newparam> for <surface*>
+		dom_newparam_type = find(dom_prof_common->getNewparam_array(), surface);
+		if(!dom_newparam_type->getSurface())
+			return false;
+		if(!dom_newparam_type->getSurface()->getFx_surface_init_common())
+			return false;
+		// テクスチャを1枚制限にしているので最初の要素だけ抜き出す
+		if(!dom_newparam_type->getSurface()->getFx_surface_init_common()->getInit_from_array().getCount())
+			return false;
+		const char* image = dom_newparam_type->getSurface()->getFx_surface_init_common()->getInit_from_array().get(0)->getValue().getID();
+#ifdef DEBUG
+		param->sampler->image.clear();
+		param->sampler->image.append(image);
+#endif
 	}
 	return true;
 }
