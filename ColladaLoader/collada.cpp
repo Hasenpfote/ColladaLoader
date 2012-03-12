@@ -34,6 +34,7 @@ static size_t new_size(size_t size){
 Node::Node(){
 	sibling = NULL;
 	child = NULL;
+	next = NULL;
 	uid = INVALID_ID;
 }
 
@@ -183,6 +184,13 @@ void Node::addChild(Node* child){
 	this->child = child;
 }
 
+void Node::addNext(Node* next){
+	if(this->next){
+		next->next = this->next;
+	}
+	this->next = next;
+}
+
 void Node::update(){	// 引数は親の行列
 	// 何か処理
 #ifdef DEBUG
@@ -216,6 +224,7 @@ bool NodeBank::alloc(size_t size){
 		for(size_t i = 0; i < actual_size; i++){
 			nodes[i].sibling = NULL;
 			nodes[i].child = NULL;
+			nodes[i].next = NULL;
 			nodes[i].uid = INVALID_ID;
 		}
 	}
@@ -344,8 +353,12 @@ bool Scene::load(daeDatabase* dae_db, domNode* dom_node, const char* parent){
 #ifdef DEBUG
 	node->name.append(myname);
 #endif
+	// アクセス用にリンク
+	if(root){
+		root->addNext(node);
+	}
+	// 親子関係の構築
 	Node* pnode = node_bank.find(pid);
-
 	if(pnode){
 		pnode->addChild(node);
 	}
@@ -356,6 +369,7 @@ bool Scene::load(daeDatabase* dae_db, domNode* dom_node, const char* parent){
 	else{
 		root = node;
 	}
+
 	size_t node_count = dom_node->getNode_array().getCount();
 	for(size_t i = 0; i < node_count; i++){
 		if(!load(dae_db, dom_node->getNode_array().get(i), NULL))
@@ -389,6 +403,11 @@ bool Scene::load(daeDatabase* dae_db, domInstance_node* dom_inst_node, const cha
 #ifdef DEBUG
 	node->name.append(name);
 #endif
+	// アクセス用にリンク
+	if(root){
+		root->addNext(node);
+	}
+	// 親子関係の構築
 	unsigned int pid = calcCRC32(reinterpret_cast<const unsigned char*>(parent));
 	Node* pnode = node_bank.find(pid);
 	if(pnode){
@@ -412,6 +431,9 @@ bool Scene::load(daeDatabase* dae_db, domInstance_node* dom_inst_node, const cha
 }
 
 Node* Scene::findNode(const char* name){
+	if(name == NULL){
+		return root;
+	}
 	unsigned int id = calcCRC32(reinterpret_cast<const unsigned char*>(name));
 	return node_bank.find(id);
 }

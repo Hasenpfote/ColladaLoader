@@ -26,9 +26,15 @@ public:
 	~Node();
 	void cleanup();
 	bool load(domNode* dom_node);
+	Node* getNext(){ return next; };
+	const Node* getNext() const { return next; }
 	void addSibling(Node* sibling);
 	void addChild(Node* child);
+	void addNext(Node* child);
 	void update();
+
+	std::vector<Geometry*>& getGeometries(){ return geometries; }
+	const std::vector<Geometry*>& getGeometries() const { return geometries; }
 private:
 	bool load(const daeElementRefArray&);
 	void load(TransformationElement*, const domLookat*);
@@ -44,6 +50,7 @@ public:
 private:
 	Node* sibling;
 	Node* child;
+	Node* next;
 	unsigned int uid;
 	std::vector<TransformationElement*> trans_elems;
 	std::vector<Geometry*> geometries;
@@ -74,8 +81,8 @@ public:
 	~Scene();
 	void cleanup();
 	bool load(domVisual_scene* dom_visual_scene);
-	Node* findNode(const char* name);
-	const Node* findNode(const char* name) const;
+	Node* findNode(const char* name = NULL);
+	const Node* findNode(const char* name = NULL) const;
 private:
 	bool load(daeDatabase* dae_db, domNode* dom_node, const char* parent);
 	bool load(daeDatabase* dae_db, domInstance_node* dom_inst_node, const char* parent);
@@ -88,8 +95,8 @@ public:
 	Collada();
 	~Collada();
 	bool load(const char* uri);
-	Node* findNode(const char* name);
-	const Node* findNode(const char* name) const;
+	Node* findNode(const char* name = NULL);
+	const Node* findNode(const char* name = NULL) const;
 private:
 	void cleanup();
 	Scene* scene;

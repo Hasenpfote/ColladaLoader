@@ -20,6 +20,16 @@ public:
 	~Triangles();
 	void cleanup();
 	bool load(domTriangles*);
+
+
+	Input* getPosition(){ return position; }
+	const Input* getPosition() const { return position; }
+	Input* getNormal(){ return normal; }
+	const Input* getNormal() const { return normal; }
+	std::vector<Input*>* getTexCoords(){ return texcoords; }
+	const std::vector<Input*>* getTexCoords() const { return texcoords; }
+	std::vector<unsigned int>* getIndices(){ return indices; }
+	const std::vector<unsigned int>* getIndices() const { return indices; }
 private:
 	bool load(const domInputLocalOffset*, const domP*, domUint);
 	bool load(const domInputLocal*, const domP*, domUint, domUint, domUint);
@@ -41,6 +51,9 @@ public:
 	~Mesh();
 	void cleanup();
 	bool load(domMesh*);
+
+	std::vector<Triangles*>* getTriangles(){ return triangles; }
+	const std::vector<Triangles*>* getTriangles() const { return triangles; }
 public:
 	std::vector<Triangles*>* triangles;
 };
@@ -51,6 +64,9 @@ public:
 	~Geometry();
 	void cleanup();
 	bool load(domInstance_geometry*);
+
+	Mesh* getMesh(){ return mesh; }
+	const Mesh* getMesh() const { return mesh; }
 private:
 	bool load(domGeometry*);
 	bool load(domBind_material*);
