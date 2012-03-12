@@ -69,6 +69,7 @@ Triangles::Triangles(){
 	normal = NULL;
 	texcoords = NULL;
 	indices = NULL;
+	mtrl_uid = (unsigned int)-1;
 }
 
 Triangles::~Triangles(){
@@ -98,6 +99,7 @@ void Triangles::cleanup(){
 		delete indices;
 		indices = NULL;
 	}
+	mtrl_uid = (unsigned int)-1;
 }
 
 bool Triangles::load(const domInputLocalOffset* dom_ilo, const domP* dom_p, domUint max_offset){
@@ -218,10 +220,12 @@ bool Triangles::load(domTriangles* dom_tri){
 	bool result = false;
 	// マテリアル名の取得
 	if(dom_tri->getMaterial()){
+		const char* material = dom_tri->getMaterial();
 #ifdef DEBUG
-		material.clear();
-		material.append(dom_tri->getMaterial());
+		this->material.clear();
+		this->material.append(material);
 #endif
+		mtrl_uid = calcCRC32(reinterpret_cast<const unsigned char*>(material));
 	}
 	// <input>で最も大きいオフセットを取得
 	const size_t max_offset = getMaxOffset(dom_tri->getInput_array());

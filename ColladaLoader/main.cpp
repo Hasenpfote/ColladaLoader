@@ -1,15 +1,27 @@
 ﻿#include <iostream>
 #include <GL/glew.h>
 #include <GL/glut.h>
+#include "glsl.h"
 #include "collada.h"
 
 // 光源
-static const GLfloat lightpos[] = { 0.0,30.0,30.0, 1.0 }; // 位置
+static const GLfloat lightpos[] = { 0.0, 0.0,30.0, 1.0 }; // 位置
 static const GLfloat lightcol[] = { 1.0, 1.0, 1.0, 1.0 }; // 直接光強度
 static const GLfloat lightamb[] = { 0.1, 0.1, 0.1, 1.0 }; // 環境光強度
 
+// マテリアル
+static const GLfloat ambient[] = { 0.2, 0.2, 0.2, 1.0 };
+static const GLfloat diffuse[] = { 0.7, 0.7, 0.7, 1.0 };
+static const GLfloat specular[] = { 0.3, 0.3, 0.3, 1.0 };
+
 // Colladaシーン
 collada::Collada* scene = NULL;
+
+// GLSLテスト
+#define USE_SHADER
+#ifdef USE_SHADER
+static Glsl glsl0;
+#endif
 
 /**
  * 初期化
@@ -20,14 +32,14 @@ static bool init(void){
 	glFrontFace(GL_CW);
 //	glEnable(GL_CULL_FACE);
 //	glCullFace(GL_BACK);
-//	glCullFace(GL_FRONT);
+	glCullFace(GL_FRONT);
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, lightcol);
 	glLightfv(GL_LIGHT0, GL_SPECULAR, lightcol);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, lightamb);
 	glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
-	glShadeModel(GL_SMOOTH);
+//	glShadeModel(GL_SMOOTH);
 //	glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
 
 	// Colladaシーンの初期化
@@ -42,6 +54,10 @@ static bool init(void){
 		scene = NULL;
 		return false;
 	}
+#ifdef USE_SHADER
+	if(!glsl0.create("shader/simple.vert", "shader/output_normal.frag"))
+		return false;
+#endif
 	return true;
 }
 
@@ -58,7 +74,15 @@ static void display(void){
 	glRotatef(-90, 1.0f, 0.0f, 0.0f);
 	r += 1.0f;
 	r = fmodf(r, 360.0f);
-
+#ifdef USE_SHADER
+	glUseProgram(glsl0.getProgram());
+#endif
+#if 1
+	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular);
+	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 100.0f);
+#endif
 	const collada::Node* node = scene->findNode();
 	while(node != NULL){
 		const collada::GeometryPtrArray& geoms = node->getGeometries();
@@ -86,7 +110,9 @@ static void display(void){
 		}
 		node = node->getNext();
 	}
-
+#ifdef USE_SHADER
+	glUseProgram(0);
+#endif
 	glutSwapBuffers();
 }
 

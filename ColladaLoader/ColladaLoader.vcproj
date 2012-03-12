@@ -201,6 +201,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\glsl.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\log.cpp"
 				>
 			</File>
@@ -236,6 +240,10 @@
 			</File>
 			<File
 				RelativePath=".\crc32.h"
+				>
+			</File>
+			<File
+				RelativePath=".\glsl.h"
 				>
 			</File>
 			<File

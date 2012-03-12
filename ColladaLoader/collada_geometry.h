@@ -10,8 +10,8 @@ namespace collada{
 
 class Input{
 public:
-	std::vector<float> f_array;
 	size_t stride;
+	FloatArray f_array;
 };
 
 class Triangles{
@@ -22,7 +22,6 @@ public:
 	void cleanup();
 	bool load(domTriangles*);
 
-
 	Input* getPosition(){ return position; }
 	const Input* getPosition() const { return position; }
 	Input* getNormal(){ return normal; }
@@ -31,19 +30,21 @@ public:
 	const InputPtrArray* getTexCoords() const { return texcoords; }
 	UintArray* getIndices(){ return indices; }
 	const UintArray* getIndices() const { return indices; }
+	unsigned int getMaterialUid() const { return mtrl_uid; }
 private:
 	bool load(const domInputLocalOffset*, const domP*, domUint);
 	bool load(const domInputLocal*, const domP*, domUint, domUint, domUint);
 	bool optimize();
 	bool isOverlapped(size_t target_index, size_t* overlapped_index);
-public:
-#ifdef DEBUG
-	std::string material;
-#endif
+private:
 	Input* position;
 	Input* normal;
 	InputPtrArray* texcoords;
 	UintArray* indices;
+	unsigned int mtrl_uid;
+#ifdef DEBUG
+	std::string material;
+#endif
 };
 
 class Mesh{
@@ -55,7 +56,7 @@ public:
 
 	TrianglesPtrArray* getTriangles(){ return triangles; }
 	const TrianglesPtrArray* getTriangles() const { return triangles; }
-public:
+private:
 	TrianglesPtrArray* triangles;
 };
 
@@ -71,13 +72,13 @@ public:
 private:
 	bool load(domGeometry*);
 	bool load(domBind_material*);
-public:
+private:
+	std::map<unsigned int, Material*> bind_material;
+	Mesh* mesh;	// メッシュのみ対応
 #ifdef DEBUG
 	std::string url;
 	std::string id;
 #endif
-	std::map<unsigned int, Material*> bind_material;
-	Mesh* mesh;	// メッシュのみ対応
 };
 
 } // namespace collada
