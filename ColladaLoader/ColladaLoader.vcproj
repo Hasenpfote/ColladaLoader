@@ -185,6 +185,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\collada_geometry.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\collada_material.cpp"
 				>
 			</File>
@@ -215,6 +219,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\collada_geometry.h"
+				>
+			</File>
+			<File
 				RelativePath=".\collada_material.h"
 				>
 			</File>
@@ -228,6 +236,10 @@
 			</File>
 			<File
 				RelativePath=".\log.h"
+				>
+			</File>
+			<File
+				RelativePath=".\texture.h"
 				>
 			</File>
 		</Filter>

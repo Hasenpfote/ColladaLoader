@@ -39,8 +39,8 @@ public:
 	public:
 	#ifdef DEBUG
 		std::string texture;
-		std::string texcoord;
-		std::string image;
+		std::string texcoord;	// ここら辺は将来的にハッシュ値に
+		std::string image;		// ここら辺は将来的にハッシュ値に
 	#endif
 		WrapMode wrap_s;
 		WrapMode wrap_t;

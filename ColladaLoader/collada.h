@@ -3,22 +3,9 @@
 #include <dom/domCOLLADA.h>
 #include <vector>
 #include "collada_util.h"
-#include "collada_material.h"
+#include "collada_geometry.h"
 
 namespace collada{
-
-class InstanceGeometry{
-public:
-	InstanceGeometry();
-	~InstanceGeometry();
-	void cleanup();
-	bool load(domInstance_geometry*);
-private:
-	bool load(domBind_material* dom_bind_mtrl);
-public:
-	std::string url;
-	std::map<unsigned int, Material*> bind_material;
-};
 
 typedef struct{
 	TransformationElementType type;
@@ -59,7 +46,7 @@ private:
 	Node* child;
 	unsigned int uid;
 	std::vector<TransformationElement*> trans_elems;
-	std::vector<InstanceGeometry*> inst_geometries;
+	std::vector<Geometry*> geometries;
 };
 
 class NodeBank{

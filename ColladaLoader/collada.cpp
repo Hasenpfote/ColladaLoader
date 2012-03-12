@@ -6,83 +6,6 @@ namespace collada{
 
 ////////////////////////////////////////////////////////////////////////////////
 
-InstanceGeometry::InstanceGeometry(){
-}
-
-InstanceGeometry::~InstanceGeometry(){
-	std::map<unsigned int, Material*>::iterator it = bind_material.begin();
-	while(it != bind_material.end()){
-		if(it->second){
-			delete it->second;
-		}
-		it++;
-	}
-}
-
-void InstanceGeometry::cleanup(){
-	url.clear();
-	std::map<unsigned int, Material*>::iterator it = bind_material.begin();
-	while(it != bind_material.end()){
-		if(it->second){
-			delete it->second;
-			it->second = NULL;
-		}
-		it++;
-	}
-	bind_material.clear();
-}
-
-bool InstanceGeometry::load(domInstance_geometry* dom_inst_geom){
-	bool result = false;
-	url.append(dom_inst_geom->getUrl().fragment().c_str());
-//	unsigned int id = calcCRC32(reinterpret_cast<const unsigned char*>(dom_inst_geom->getUrl().fragment().c_str()));
-	// <bind_material>
-	domBind_material* dom_bind_mtrl = dom_inst_geom->getBind_material();
-	if(dom_bind_mtrl){
-		if(!load(dom_bind_mtrl))
-			goto finish;
-	}
-	result = true;
-finish:
-	if(!result)
-		cleanup();
-	return result;
-}
-
-bool InstanceGeometry::load(domBind_material* dom_bind_mtrl){
-	bool result = false;
-	// <technique_common>		
-	domBind_material::domTechnique_common* dom_tech_common = dom_bind_mtrl->getTechnique_common();
-	// <instance_material>
-	size_t mtrl_count = dom_tech_common->getInstance_material_array().getCount();
-	for(size_t i = 0; i < mtrl_count; i++){
-		domInstance_material* dom_inst_mtrl = dom_tech_common->getInstance_material_array().get(i);
-		try{
-			Material* mtrl = new Material;
-#ifdef DEBUG
-			mtrl->symbol.append(dom_inst_mtrl->getSymbol());
-#endif
-			unsigned int id = calcCRC32(reinterpret_cast<const unsigned char*>(dom_inst_mtrl->getSymbol()));
-			std::pair<unsigned int, Material*> p(id, mtrl);
-			std::map<unsigned int, Material*>::_Pairib pib = bind_material.insert(p);
-			if(!pib.second)
-				goto finish;	// キーが重複している
-			if(!mtrl->load(dom_inst_mtrl))
-				goto finish;
-		}
-		catch(std::bad_alloc& e){
-			goto finish;
-		}
-	}
-	result = true;
-finish:
-	if(!result)
-		cleanup();
-	return result;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 #define INVALID_ID (unsigned int)-1
 
 /**
@@ -118,7 +41,7 @@ Node::~Node(){
 	for(std::vector<TransformationElement*>::iterator it = trans_elems.begin(); it != trans_elems.end(); it++){
 		delete (*it);
 	}
-	for(std::vector<InstanceGeometry*>::iterator it = inst_geometries.begin(); it != inst_geometries.end(); it++){
+	for(std::vector<Geometry*>::iterator it = geometries.begin(); it != geometries.end(); it++){
 		delete (*it);
 	}
 }
@@ -129,11 +52,11 @@ void Node::cleanup(){
 		(*it) = NULL;
 	}
 	trans_elems.clear();
-	for(std::vector<InstanceGeometry*>::iterator it = inst_geometries.begin(); it != inst_geometries.end(); it++){
+	for(std::vector<Geometry*>::iterator it = geometries.begin(); it != geometries.end(); it++){
 		delete (*it);
 		(*it) = NULL;
 	}
-	inst_geometries.clear();
+	geometries.clear();
 }
 
 bool Node::load(const daeElementRefArray& dae_elem_ref_array){
@@ -230,8 +153,8 @@ bool Node::load(domNode* dom_node){
 	for(size_t i = 0; i < geom_count; i++){
 		domInstance_geometry* dom_inst_geom = dom_node->getInstance_geometry_array().get(i);
 		try{
-			InstanceGeometry* geom = new InstanceGeometry;
-			inst_geometries.push_back(geom);
+			Geometry* geom = new Geometry;
+			geometries.push_back(geom);
 			if(!geom->load(dom_inst_geom))
 				goto finish;
 		}
