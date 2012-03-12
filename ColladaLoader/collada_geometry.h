@@ -69,6 +69,8 @@ public:
 
 	Mesh* getMesh(){ return mesh; }
 	const Mesh* getMesh() const { return mesh; }
+	std::map<unsigned int, Material*>& getBindMaterial(){ return bind_material; }
+	const std::map<unsigned int, Material*>& getBindMaterial() const { return bind_material; }
 private:
 	bool load(domGeometry*);
 	bool load(domBind_material*);

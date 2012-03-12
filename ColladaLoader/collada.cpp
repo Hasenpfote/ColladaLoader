@@ -186,6 +186,9 @@ void Node::addNext(Node* next){
 	this->next = next;
 }
 
+/**
+ * ToDo:スタックの深さが長くなりすぎるので要検討
+ */
 void Node::update(){	// 引数は親の行列
 	// 何か処理
 #ifdef DEBUG
@@ -193,11 +196,8 @@ void Node::update(){	// 引数は親の行列
 #endif
 	if(child)
 		child->update();
-	Node* next = sibling;
-	while(next){
-		next->update();
-		next = next->sibling;
-	}
+	if(sibling)
+		sibling->update();
 }
 
 NodeBank::NodeBank(){
@@ -434,7 +434,7 @@ Node* Scene::findNode(const char* name){
 }
 
 const Node* Scene::findNode(const char* name) const{
-	return reinterpret_cast<const Node*>(findNode(name));
+	return const_cast<Scene*>(this)->findNode(name);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -509,7 +509,7 @@ Node* Collada::findNode(const char* name){
 }
 
 const Node* Collada::findNode(const char* name) const{
-	return reinterpret_cast<const Node*>(findNode(name));
+	return const_cast<Collada*>(this)->findNode(name);
 }
 
 } // namespace collada

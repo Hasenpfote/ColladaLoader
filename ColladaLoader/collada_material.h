@@ -75,6 +75,23 @@ public:
 	~Material();
 	void cleanup();
 	bool load(domInstance_material*);
+
+	Param* getEmission(){ return &emission; }
+	const Param* getEmission() const { return &emission; }
+	Param* getAmbient(){ return &ambient; }
+	const Param* getAmbient() const { return &ambient; }
+	Param* getDiffuse(){ return &diffuse; }
+	const Param* getDiffuse() const { return &diffuse; }
+	Param* getSpecular(){ return &specular; }
+	const Param* getSpecular() const { return &specular; }
+	float getShininess() const { return shininess; }
+	Param* getReflective(){ return &reflective; }
+	const Param* getReflective() const { return &reflective; }
+	float getReflectivity() const { return reflectivity; }
+	Param* getTransparent(){ return &transparent; }
+	const Param* getTransparent() const { return &transparent; }
+	float getTransparency() const { return transparency; }
+	float getIndexOfRefraction() const { return index_of_refraction; }
 private:
 	bool load(const domProfile_COMMON*);
 	bool load(const domProfile_COMMON::domTechnique::domConstant*);

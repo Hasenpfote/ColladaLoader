@@ -1,18 +1,16 @@
 ﻿#include <iostream>
 #include <GL/glew.h>
 #include <GL/glut.h>
+#include <opencv/cv.h>
+#include <opencv/highgui.h>
 #include "glsl.h"
 #include "collada.h"
 
 // 光源
-static const GLfloat lightpos[] = { 0.0, 0.0,30.0, 1.0 }; // 位置
-static const GLfloat lightcol[] = { 1.0, 1.0, 1.0, 1.0 }; // 直接光強度
-static const GLfloat lightamb[] = { 0.1, 0.1, 0.1, 1.0 }; // 環境光強度
-
-// マテリアル
-static const GLfloat ambient[] = { 0.2, 0.2, 0.2, 1.0 };
-static const GLfloat diffuse[] = { 0.7, 0.7, 0.7, 1.0 };
-static const GLfloat specular[] = { 0.3, 0.3, 0.3, 1.0 };
+static const GLfloat lightpos[] = {0.0f,30.0f,30.0f, 1.0f}; // 位置
+static const GLfloat lightdif[] = {1.0f, 1.0f, 1.0f, 1.0f}; // 直接光強度
+static const GLfloat lightspe[] = {1.0f, 1.0f, 1.0f, 1.0f}; // 直接光強度
+static const GLfloat lightamb[] = {0.2f, 0.2f, 0.2f, 1.0f}; // 環境光強度
 
 // Colladaシーン
 collada::Collada* scene = NULL;
@@ -22,6 +20,10 @@ collada::Collada* scene = NULL;
 #ifdef USE_SHADER
 static Glsl glsl0;
 #endif
+
+// テクスチャ
+#define USE_TEXTURE
+static GLuint texture;
 
 /**
  * 初期化
@@ -35,8 +37,8 @@ static bool init(void){
 	glCullFace(GL_FRONT);
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, lightcol);
-	glLightfv(GL_LIGHT0, GL_SPECULAR, lightcol);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, lightdif);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, lightspe);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, lightamb);
 	glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
 //	glShadeModel(GL_SMOOTH);
@@ -49,16 +51,36 @@ static bool init(void){
 	catch(std::bad_alloc& e){
 		return false;
 	}
-	if(!scene->load("mone/mone.dae")){
+	if(!scene->load("model/mone/mone.dae")){
 		delete scene;
 		scene = NULL;
 		return false;
 	}
 #ifdef USE_SHADER
-	if(!glsl0.create("shader/simple.vert", "shader/output_normal.frag"))
+//	if(!glsl0.create("shader/simple.vert", "shader/output_texture.frag"))
+	if(!glsl0.create("shader/simple.vert", "shader/phong.frag"))
 		return false;
 #endif
+
+	glActiveTexture(GL_TEXTURE0);
+	IplImage* image = cvLoadImage("model/mone/mone.bmp");
+	cvCvtColor(image, image, CV_BGR2RGB);
+	cvFlip(image, NULL, 0);
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
+	gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, image->width, image->height, GL_RGB, GL_UNSIGNED_BYTE, image->imageData);
+	cvReleaseImage(&image);
+
 	return true;
+}
+
+/**
+ * 解放
+ */
+void release(){
+	glDeleteTextures(1, &texture);
 }
 
 /**
@@ -77,12 +99,6 @@ static void display(void){
 #ifdef USE_SHADER
 	glUseProgram(glsl0.getProgram());
 #endif
-#if 1
-	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular);
-	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 100.0f);
-#endif
 	const collada::Node* node = scene->findNode();
 	while(node != NULL){
 		const collada::GeometryPtrArray& geoms = node->getGeometries();
@@ -90,22 +106,50 @@ static void display(void){
 			const collada::Mesh* mesh = geoms[i]->getMesh();
 			if(mesh == NULL)
 				continue;
+			std::map<unsigned int, collada::Material*>& bind_material = geoms[i]->getBindMaterial();
 			const collada::TrianglesPtrArray* triangles = mesh->getTriangles();
 			for(size_t j = 0; j < triangles->size(); j++){
-
-				const collada::Input* position = (*triangles)[j]->getPosition();
-				const collada::Input* normal = (*triangles)[j]->getNormal();
+				// 位置
 				const collada::UintArray* indices = (*triangles)[j]->getIndices();
-
+				const collada::Input* position = (*triangles)[j]->getPosition();
+				if(!indices || !position)
+					continue;
 				glEnableClientState(GL_VERTEX_ARRAY);
-				glEnableClientState(GL_NORMAL_ARRAY);
-				glVertexPointer(3, GL_FLOAT, 0, &position->f_array[0]);
-				glNormalPointer(GL_FLOAT, 0, &normal->f_array[0]);
-
+				glVertexPointer(position->stride, GL_FLOAT, 0, &position->f_array[0]);
+				// 法線
+				const collada::Input* normal = (*triangles)[j]->getNormal();
+				if(normal){
+					glEnableClientState(GL_NORMAL_ARRAY);
+					glNormalPointer(GL_FLOAT, 0, &normal->f_array[0]);
+				}
+#ifdef USE_TEXTURE
+				// テクスチャ座標
+				const collada::InputPtrArray* texcoords = (*triangles)[j]->getTexCoords();
+				if(texcoords){
+					glActiveTexture(GL_TEXTURE0);
+					glClientActiveTexture(GL_TEXTURE0);
+					glEnable(GL_TEXTURE_2D);
+					glBindTexture(GL_TEXTURE_2D, texture);
+					glClientActiveTexture(GL_TEXTURE0);
+					glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+					collada::InputPtrArray::const_iterator it = texcoords->begin();
+					glTexCoordPointer((*it)[0].stride, GL_FLOAT, 0, &(*it)[0].f_array[0]);
+				}
+#endif
+				// マテリアル
+				collada::Material* material = bind_material[(*triangles)[j]->getMaterialUid()];
+				//glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, material->getEmission()->color);
+				glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, material->getAmbient()->color);
+				glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, material->getDiffuse()->color);
+				glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, material->getSpecular()->color);
+				glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, material->getShininess());
+				// 描画
 				glDrawElements(GL_TRIANGLES, indices->size(), GL_UNSIGNED_INT, &(*indices)[0]);
-			
+				// 後始末
 				glDisableClientState(GL_VERTEX_ARRAY);
 				glDisableClientState(GL_NORMAL_ARRAY);
+				glClientActiveTexture(GL_TEXTURE0);
+				glDisable(GL_TEXTURE_2D);
 			}
 		}
 		node = node->getNext();
