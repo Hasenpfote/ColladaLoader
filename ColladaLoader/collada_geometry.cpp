@@ -85,7 +85,7 @@ void Triangles::cleanup(){
 		normal = NULL;
 	}
 	if(texcoords){
-		std::vector<Input*>::iterator it = texcoords->begin();
+		InputPtrArray::iterator it = texcoords->begin();
 		while(it != texcoords->end()){
 			delete (*it);
 			(*it) = NULL;
@@ -142,7 +142,7 @@ bool Triangles::load(const domInputLocalOffset* dom_ilo, const domP* dom_p, domU
 	if(strcmp(dom_ilo->getSemantic(), "TEXCOORD") == 0){
 		if(!texcoords){
 			try{
-				texcoords = new std::vector<Input*>;
+				texcoords = new InputPtrArray;
 			}
 			catch(std::bad_alloc& e){
 				delete input;
@@ -199,7 +199,7 @@ bool Triangles::load(const domInputLocal* dom_il, const domP* dom_p, domUint max
 	if(strcmp(dom_il->getSemantic(), "TEXCOORD") == 0){
 		if(!texcoords){
 			try{
-				texcoords = new std::vector<Input*>;
+				texcoords = new InputPtrArray;
 			}
 			catch(std::bad_alloc& e){
 				delete input;
@@ -302,7 +302,7 @@ bool Triangles::isOverlapped(size_t target_index, size_t* overlapped_index){
 			continue;
 		// テクスチャ座標 
 		if(texcoords){
-			std::vector<Input*>::iterator it = texcoords->begin();
+			InputPtrArray::iterator it = texcoords->begin();
 			while(it != texcoords->end()){
 				const size_t stride = (*it)->stride;
 				const float* p = &(*it)->f_array[0];
@@ -335,7 +335,7 @@ bool Triangles::optimize(){
 	const size_t flag_size = static_cast<size_t>(ceilf(static_cast<float>(num_elements) / static_cast<float>(bits)));
 	size_t* flags;
 	try{
-		indices = new std::vector<unsigned int>;
+		indices = new UintArray;
 		flags = new size_t[flag_size];
 	}
 	catch(std::bad_alloc& e){
@@ -368,20 +368,20 @@ bool Triangles::optimize(){
 	for(size_t i = 0; i < num_elements; i++){
 		if(flags[i/bits] & (1 << (i % bits))){
 			if(position){
-				std::vector<float>::iterator it_beg = position->f_array.begin() + (i - offset) * position->stride;
-				std::vector<float>::iterator it_end = it_beg + position->stride;
+				FloatArray::iterator it_beg = position->f_array.begin() + (i - offset) * position->stride;
+				FloatArray::iterator it_end = it_beg + position->stride;
 				position->f_array.erase(it_beg, it_end);
 			}
 			if(normal){
-				std::vector<float>::iterator it_beg = normal->f_array.begin() + (i - offset) * normal->stride;
-				std::vector<float>::iterator it_end = it_beg + normal->stride;
+				FloatArray::iterator it_beg = normal->f_array.begin() + (i - offset) * normal->stride;
+				FloatArray::iterator it_end = it_beg + normal->stride;
 				normal->f_array.erase(it_beg, it_end);
 			}
 			if(texcoords){
-				std::vector<Input*>::iterator it = texcoords->begin();
+				InputPtrArray::iterator it = texcoords->begin();
 				while(it != texcoords->end()){
-					std::vector<float>::iterator it_beg = (*it)->f_array.begin() + (i - offset) * (*it)->stride;
-					std::vector<float>::iterator it_end = it_beg + (*it)->stride;
+					FloatArray::iterator it_beg = (*it)->f_array.begin() + (i - offset) * (*it)->stride;
+					FloatArray::iterator it_end = it_beg + (*it)->stride;
 					(*it)->f_array.erase(it_beg, it_end);
 					it++;
 				}
@@ -391,13 +391,13 @@ bool Triangles::optimize(){
 	}
 
 	if(position)
-		std::vector<float>(position->f_array).swap(position->f_array);
+		FloatArray(position->f_array).swap(position->f_array);
 	if(normal)
-		std::vector<float>(normal->f_array).swap(normal->f_array);
+		FloatArray(normal->f_array).swap(normal->f_array);
 	if(texcoords){
-		std::vector<Input*>::iterator it = texcoords->begin();
+		InputPtrArray::iterator it = texcoords->begin();
 		while(it != texcoords->end()){
-			std::vector<float>((*it)->f_array).swap((*it)->f_array);
+			FloatArray((*it)->f_array).swap((*it)->f_array);
 			it++;
 		}
 	}
@@ -461,7 +461,7 @@ Mesh::~Mesh(){
 
 void Mesh::cleanup(){
 	if(triangles){
-		std::vector<Triangles*>::iterator it = triangles->begin();
+		TrianglesPtrArray::iterator it = triangles->begin();
 		while(it != triangles->end()){
 			delete (*it);
 			(*it) = NULL;
@@ -492,7 +492,7 @@ bool Mesh::load(domMesh* dom_mesh){
 	count = dom_mesh->getTriangles_array().getCount();
 	if(count > 0){
 		try{
-			triangles = new std::vector<Triangles*>;
+			triangles = new TrianglesPtrArray;
 		}
 		catch(std::bad_alloc& e){
 			goto finish;

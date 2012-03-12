@@ -2,12 +2,13 @@
 #include <dae.h>
 #include <dom/domCOLLADA.h>
 #include <vector>
+#include "collada_def.h"
 #include "collada_util.h"
 #include "collada_geometry.h"
 
 namespace collada{
 
-typedef struct{
+typedef struct tagTransformationElement{
 	TransformationElementType type;
 	union{
 		float lookat[9];
@@ -33,8 +34,8 @@ public:
 	void addNext(Node* child);
 	void update();
 
-	std::vector<Geometry*>& getGeometries(){ return geometries; }
-	const std::vector<Geometry*>& getGeometries() const { return geometries; }
+	GeometryPtrArray& getGeometries(){ return geometries; }
+	const GeometryPtrArray& getGeometries() const { return geometries; }
 private:
 	bool load(const daeElementRefArray&);
 	void load(TransformationElement*, const domLookat*);
@@ -52,8 +53,8 @@ private:
 	Node* child;
 	Node* next;
 	unsigned int uid;
-	std::vector<TransformationElement*> trans_elems;
-	std::vector<Geometry*> geometries;
+	TransformationPtrArray trans_elems;
+	GeometryPtrArray geometries;
 };
 
 class NodeBank{

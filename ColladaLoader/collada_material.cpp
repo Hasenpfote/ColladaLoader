@@ -48,15 +48,11 @@ Material::Material(){
 }
 
 Material::~Material(){
-	std::vector<VertexInput*>::iterator it = vis.begin();
-	while(it != vis.end()){
-		delete (*it);
-		it++;
-	}
+	cleanup();
 }
 
 void Material::cleanup(){
-	std::vector<VertexInput*>::iterator it = vis.begin();
+	VertexInputPtrArray::iterator it = vis.begin();
 	while(it != vis.end()){
 		delete (*it);
 		(*it) = NULL;

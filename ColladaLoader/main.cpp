@@ -61,17 +61,17 @@ static void display(void){
 
 	const collada::Node* node = scene->findNode();
 	while(node != NULL){
-		const std::vector<collada::Geometry*>& geoms = node->getGeometries();
+		const collada::GeometryPtrArray& geoms = node->getGeometries();
 		for(size_t i = 0; i < geoms.size(); i++){
 			const collada::Mesh* mesh = geoms[i]->getMesh();
 			if(mesh == NULL)
 				continue;
-			const std::vector<collada::Triangles*>* triangles = mesh->getTriangles();
+			const collada::TrianglesPtrArray* triangles = mesh->getTriangles();
 			for(size_t j = 0; j < triangles->size(); j++){
 
 				const collada::Input* position = (*triangles)[j]->getPosition();
 				const collada::Input* normal = (*triangles)[j]->getNormal();
-				const std::vector<unsigned int>* indices = (*triangles)[j]->getIndices();
+				const collada::UintArray* indices = (*triangles)[j]->getIndices();
 
 				glEnableClientState(GL_VERTEX_ARRAY);
 				glEnableClientState(GL_NORMAL_ARRAY);

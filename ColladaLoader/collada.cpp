@@ -39,21 +39,16 @@ Node::Node(){
 }
 
 Node::~Node(){
-	for(std::vector<TransformationElement*>::iterator it = trans_elems.begin(); it != trans_elems.end(); it++){
-		delete (*it);
-	}
-	for(std::vector<Geometry*>::iterator it = geometries.begin(); it != geometries.end(); it++){
-		delete (*it);
-	}
+	cleanup();
 }
 
 void Node::cleanup(){
-	for(std::vector<TransformationElement*>::iterator it = trans_elems.begin(); it != trans_elems.end(); it++){
+	for(TransformationPtrArray::iterator it = trans_elems.begin(); it != trans_elems.end(); it++){
 		delete (*it);
 		(*it) = NULL;
 	}
 	trans_elems.clear();
-	for(std::vector<Geometry*>::iterator it = geometries.begin(); it != geometries.end(); it++){
+	for(GeometryPtrArray::iterator it = geometries.begin(); it != geometries.end(); it++){
 		delete (*it);
 		(*it) = NULL;
 	}

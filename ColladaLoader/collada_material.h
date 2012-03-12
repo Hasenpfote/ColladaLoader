@@ -3,6 +3,7 @@
 #include <dom/domCOLLADA.h>
 #include <dom/domProfile_COMMON.h>
 #include <vector>
+#include "collada_def.h"
 #include "collada_util.h"
 
 namespace collada{
@@ -87,7 +88,7 @@ public:
 	std::string symbol;	 // for debug
 #endif
 private:
-	std::vector<VertexInput*> vis;	// std::map にするか？キーはsemantic
+	VertexInputPtrArray vis;	// std::map にするか？キーはsemantic
 	// ToDO: 並びは後で見直す
 	Param emission;
 	Param ambient;

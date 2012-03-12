@@ -1,6 +1,7 @@
 #pragma once
 #include <dae.h>
 #include <dom/domCOLLADA.h>
+#include "collada_def.h"
 #include "collada_util.h"
 #include "collada_material.h"
 
@@ -26,10 +27,10 @@ public:
 	const Input* getPosition() const { return position; }
 	Input* getNormal(){ return normal; }
 	const Input* getNormal() const { return normal; }
-	std::vector<Input*>* getTexCoords(){ return texcoords; }
-	const std::vector<Input*>* getTexCoords() const { return texcoords; }
-	std::vector<unsigned int>* getIndices(){ return indices; }
-	const std::vector<unsigned int>* getIndices() const { return indices; }
+	InputPtrArray* getTexCoords(){ return texcoords; }
+	const InputPtrArray* getTexCoords() const { return texcoords; }
+	UintArray* getIndices(){ return indices; }
+	const UintArray* getIndices() const { return indices; }
 private:
 	bool load(const domInputLocalOffset*, const domP*, domUint);
 	bool load(const domInputLocal*, const domP*, domUint, domUint, domUint);
@@ -41,8 +42,8 @@ public:
 #endif
 	Input* position;
 	Input* normal;
-	std::vector<Input*>* texcoords;
-	std::vector<unsigned int>* indices;
+	InputPtrArray* texcoords;
+	UintArray* indices;
 };
 
 class Mesh{
@@ -52,10 +53,10 @@ public:
 	void cleanup();
 	bool load(domMesh*);
 
-	std::vector<Triangles*>* getTriangles(){ return triangles; }
-	const std::vector<Triangles*>* getTriangles() const { return triangles; }
+	TrianglesPtrArray* getTriangles(){ return triangles; }
+	const TrianglesPtrArray* getTriangles() const { return triangles; }
 public:
-	std::vector<Triangles*>* triangles;
+	TrianglesPtrArray* triangles;
 };
 
 class Geometry{

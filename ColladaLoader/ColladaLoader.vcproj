@@ -219,6 +219,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\collada_def.h"
+				>
+			</File>
+			<File
 				RelativePath=".\collada_geometry.h"
 				>
 			</File>
