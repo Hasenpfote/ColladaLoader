@@ -187,17 +187,24 @@ void Node::addNext(Node* next){
 }
 
 /**
- * ToDo:スタックの深さが長くなりすぎるので要検討
+ * 少々回りくどいがスタック深度を浅く抑えるため
  */
-void Node::update(){	// 引数は親の行列
+void Node::update(bool flag){	// ToDo:引数は親の行列などを後ほど追加
 	// 何か処理
 #ifdef DEBUG
 	printf("node: %s\n", name.c_str());
 #endif
+	// 子供の更新
 	if(child)
-		child->update();
-	if(sibling)
-		sibling->update();
+		child->update(true);
+	// 兄弟の更新
+	if(flag && sibling){
+		Node* node = sibling;
+		do{
+			node->update(false);
+			node = node->sibling;
+		}while(node);
+	}
 }
 
 NodeBank::NodeBank(){

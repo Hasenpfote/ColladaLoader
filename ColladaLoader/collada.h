@@ -32,8 +32,7 @@ public:
 	void addSibling(Node* sibling);
 	void addChild(Node* child);
 	void addNext(Node* child);
-	void update();
-
+	void update(bool flag = true);
 	GeometryPtrArray& getGeometries(){ return geometries; }
 	const GeometryPtrArray& getGeometries() const { return geometries; }
 private:
