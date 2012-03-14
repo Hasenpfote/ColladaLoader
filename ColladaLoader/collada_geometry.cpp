@@ -217,7 +217,6 @@ bool Triangles::load(const domInputLocal* dom_il, const domP* dom_p, domUint max
 }
 
 bool Triangles::load(domTriangles* dom_tri){
-	bool result = false;
 	// マテリアル名の取得
 	if(dom_tri->getMaterial()){
 		const char* material = dom_tri->getMaterial();
@@ -239,31 +238,32 @@ bool Triangles::load(domTriangles* dom_tri){
 			const char* source = dom_ilo->getSource().fragment().c_str();
 			domVertices* dom_verts;
 			if(dom_tri->getDAE()->getDatabase()->getElement((daeElement**)&dom_verts, 0, source, "vertices") != DAE_OK){
-				goto finish;
+				cleanup();
+				return false;
 			}
 			// <vertices>を展開
 			const size_t input_count = dom_verts->getInput_array().getCount();
 			for(size_t j = 0; j < input_count; j++){
 				domInputLocal* dom_il = dom_verts->getInput_array().get(i);
-				if(!load(dom_il, dom_p, max_offset, dom_ilo->getOffset(), dom_ilo->getSet()))
-					goto finish;
+				if(!load(dom_il, dom_p, max_offset, dom_ilo->getOffset(), dom_ilo->getSet())){
+					cleanup();
+					return false;
+				}
 			}
 		}
 		else{
-			if(!load(dom_ilo, dom_p, max_offset))
-				goto finish;
+			if(!load(dom_ilo, dom_p, max_offset)){
+				cleanup();
+				return false;
+			}
 		}
 	}
 	// 展開した配列を圧縮しインデクス化する
-	if(!optimize())
-		goto finish;
-
-	result = true;
-finish:
-	if(!result){
+	if(!optimize()){
 		cleanup();
+		return false;
 	}
-	return result;
+	return true;
 }
 
 /**
@@ -478,7 +478,6 @@ void Mesh::cleanup(){
 }
 
 bool Mesh::load(domMesh* dom_mesh){
-	bool result = false;
 	// <polylist>
 	size_t count = dom_mesh->getPolylist_array().getCount();
 	for(size_t i = 0; i < count; i++){
@@ -499,7 +498,8 @@ bool Mesh::load(domMesh* dom_mesh){
 			triangles = new TrianglesPtrArray;
 		}
 		catch(std::bad_alloc& e){
-			goto finish;
+			cleanup();
+			return false;
 		}
 	}
 	for(size_t i = 0; i < count; i++){
@@ -509,19 +509,17 @@ bool Mesh::load(domMesh* dom_mesh){
 			tri = new Triangles;
 		}
 		catch(std::bad_alloc& e){
-			goto finish;
+			cleanup();
+			return false;
 		}
 		if(!tri->load(dom_tri)){
 			delete tri;
-			goto finish;
+			cleanup();
+			return false;
 		}
 		triangles->push_back(tri);
 	}
-	result = true;
-finish:
-	if(!result)
-		cleanup();
-	return result;
+	return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -560,8 +558,6 @@ void Geometry::cleanup(){
 }
 
 bool Geometry::load(domInstance_geometry* dom_inst_geom){
-	bool result = false;
-
 	const char* url = dom_inst_geom->getUrl().fragment().c_str();
 #ifdef DEBUG
 	this->url.clear();
@@ -570,26 +566,27 @@ bool Geometry::load(domInstance_geometry* dom_inst_geom){
 #if 1
 	// <geometry>
 	domGeometry* dom_geom;
-	if(dom_inst_geom->getDAE()->getDatabase()->getElement((daeElement**)&dom_geom, 0, url, "geometry") != DAE_OK)
-		goto finish;
-	if(!load(dom_geom))
-		goto finish;
+	if(dom_inst_geom->getDAE()->getDatabase()->getElement((daeElement**)&dom_geom, 0, url, "geometry") != DAE_OK){
+		cleanup();
+		return false;
+	}
+	if(!load(dom_geom)){
+		cleanup();
+		return false;
+	}
 #endif
 	// <bind_material>
 	domBind_material* dom_bind_mtrl = dom_inst_geom->getBind_material();
 	if(dom_bind_mtrl){
-		if(!load(dom_bind_mtrl))
-			goto finish;
+		if(!load(dom_bind_mtrl)){
+			cleanup();
+			return false;
+		}
 	}
-	result = true;
-finish:
-	if(!result)
-		cleanup();
-	return result;
+	return true;
 }
 
 bool Geometry::load(domGeometry* dom_geom){
-	bool result = false;
 #ifdef DEBUG
 	id.clear();
 	id.append(dom_geom->getID());
@@ -599,20 +596,20 @@ bool Geometry::load(domGeometry* dom_geom){
 	if(dom_mesh){
 		try{
 			mesh = new Mesh;
-			if(!mesh->load(dom_mesh))
-				goto finish;
 		}
 		catch(std::bad_alloc& e){
-			goto finish;
+			cleanup();
+			return false;
+		}
+		if(!mesh->load(dom_mesh)){
+			cleanup();
+			return false;
 		}
 	}
-	result = true;
-finish:
-	return result;
+	return true;
 }
 
 bool Geometry::load(domBind_material* dom_bind_mtrl){
-	bool result = false;
 	// <technique_common>		
 	domBind_material::domTechnique_common* dom_tech_common = dom_bind_mtrl->getTechnique_common();
 	// <instance_material>
@@ -624,7 +621,8 @@ bool Geometry::load(domBind_material* dom_bind_mtrl){
 			mtrl = new Material;
 		}
 		catch(std::bad_alloc& e){
-			goto finish;
+			cleanup();
+			return false;
 		}
 #ifdef DEBUG
 		mtrl->symbol.clear();
@@ -632,7 +630,8 @@ bool Geometry::load(domBind_material* dom_bind_mtrl){
 #endif
 		if(!mtrl->load(dom_inst_mtrl)){
 			delete mtrl;
-			goto finish;
+			cleanup();
+			return false;
 		}
 		// 登録	
 		unsigned int id = calcCRC32(reinterpret_cast<const unsigned char*>(dom_inst_mtrl->getSymbol()));
@@ -640,14 +639,11 @@ bool Geometry::load(domBind_material* dom_bind_mtrl){
 		std::map<unsigned int, Material*>::_Pairib pib = bind_material.insert(p);
 		if(!pib.second){	// キーが重複している
 			delete mtrl;
-			goto finish;
+			cleanup();
+			return false;
 		}
 	}
-	result = true;
-finish:
-	if(!result)
-		cleanup();
-	return result;
+	return true;
 }
 
 } // namespace collada

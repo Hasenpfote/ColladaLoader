@@ -20,4 +20,6 @@ typedef std::vector<Triangles*> TrianglesPtrArray;
 class VertexInput;
 typedef std::vector<VertexInput*> VertexInputPtrArray;
 
+typedef std::vector<std::string*> StringPtrArray;
+
 } // namespace collada

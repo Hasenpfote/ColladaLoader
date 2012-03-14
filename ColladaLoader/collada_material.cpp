@@ -91,22 +91,27 @@ void Material::cleanup(){
 }
 
 bool Material::load(domInstance_material* dom_inst_mtrl){
-	bool result = false;
 	const char* target = dom_inst_mtrl->getTarget().fragment().c_str();
 #if 1
 	daeDatabase* dae_db = dom_inst_mtrl->getDAE()->getDatabase();
 	// <library_materials>
 	domMaterial* dom_mtrl;
-	if(dae_db->getElement((daeElement**)&dom_mtrl, 0, target, "material") != DAE_OK)
-		goto finish;
+	if(dae_db->getElement((daeElement**)&dom_mtrl, 0, target, "material") != DAE_OK){
+		cleanup();
+		return false;
+	}
 	domInstance_effect* dom_inst_effect = dom_mtrl->getInstance_effect();
-	if(!dom_inst_effect)
-		goto finish;
+	if(!dom_inst_effect){
+		cleanup();
+		return false;
+	}
 	// <library_effects>
 	const char* url = dom_inst_effect->getUrl().fragment().c_str();
 	domEffect* dom_effect;
-	if(dae_db->getElement((daeElement**)&dom_effect, 0, url, "effect") != DAE_OK)
-		goto finish;
+	if(dae_db->getElement((daeElement**)&dom_effect, 0, url, "effect") != DAE_OK){
+		cleanup();
+		return false;
+	}
 	// マテリアルを展開する
 	// 最初に見つかった<profile_COMMON>のみ適用する
 	bool find = false;
@@ -115,34 +120,39 @@ bool Material::load(domInstance_material* dom_inst_mtrl){
 		domFx_profile_abstract* dom_fx_abst = dom_effect->getFx_profile_abstract_array().get(i);
 		if(strcmp(dom_fx_abst->getTypeName(), "profile_COMMON") == 0){
 			domProfile_COMMON* dom_prof_common = dynamic_cast<domProfile_COMMON*>(dom_fx_abst);
-			if(!load(dom_prof_common))
-				goto finish;
+			if(!load(dom_prof_common)){
+				cleanup();
+				return false;
+			}
 			find = true;
 			break;
 		}
 	}
-	if(!find)
-		goto finish;
+	if(!find){
+		cleanup();
+		return false;
+	}
 #endif	
 	// <bind_vertex_input>
 	size_t vi_count = dom_inst_mtrl->getBind_vertex_input_array().getCount();
 	for(size_t i = 0; i < vi_count; i++){
 		domInstance_material::domBind_vertex_input* dom_bind_vert_input = dom_inst_mtrl->getBind_vertex_input_array().get(i);
+		VertexInput* vi;
 		try{
-			VertexInput* vi = new VertexInput;
-			vis.push_back(vi);
-			if(!vi->load(dom_bind_vert_input))
-				goto finish;
+			vi = new VertexInput;
 		}
 		catch(std::bad_alloc& e){
-			goto finish;
+			cleanup();
+			return false;
 		}
+		if(!vi->load(dom_bind_vert_input)){
+			delete vi;
+			cleanup();
+			return false;
+		}
+		vis.push_back(vi);
 	}
-	result = true;
-finish:
-	if(!result)
-		cleanup();
-	return result;
+	return true;
 }
 
 bool Material::load(const domProfile_COMMON* dom_prof_common){

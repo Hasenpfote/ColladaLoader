@@ -90,6 +90,17 @@ private:
 	Node* root;
 };
 
+class Images{
+public:
+	Images();
+	~Images();
+	bool load(const char* path, const domLibrary_images*);
+	void cleanup();
+private:
+	std::string path;
+	StringPtrArray images;
+};
+
 class Collada{
 public:
 	Collada();
@@ -98,8 +109,12 @@ public:
 	Node* findNode(const char* name = NULL);
 	const Node* findNode(const char* name = NULL) const;
 private:
+	bool loadLibraryImages(const char* path, daeDatabase*);
+	bool loadScene(daeDatabase*);
+private:
 	void cleanup();
 	Scene* scene;
+	Images* images;
 };
 
 } // namespace collada

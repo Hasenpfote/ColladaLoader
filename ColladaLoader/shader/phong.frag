@@ -11,6 +11,6 @@ void main (void){
 		vec3 view = normalize(position);
 		vec3 halfway = normalize(light - view);
 		float specular = pow(max(dot(fnormal, halfway), 0.0), gl_FrontMaterial.shininess);
-		gl_FragColor += gl_LightSource[0].diffuse * diffuse + gl_FrontLightProduct[0].specular * specular;
+		gl_FragColor += gl_FrontLightProduct[0].diffuse * diffuse + gl_FrontLightProduct[0].specular * specular;
 	}
 }

@@ -56,23 +56,22 @@ void Node::cleanup(){
 }
 
 bool Node::load(const daeElementRefArray& dae_elem_ref_array){
-	bool result = false;
 	size_t cont_count = dae_elem_ref_array.getCount();
 	for(size_t i = 0; i < cont_count; i++){
 		daeElement* dae_elem = dae_elem_ref_array.get(i);
 		TransformationElementType type = getTransformationType(dae_elem);
 		if(!isTransformationElement(type))
 			continue;
-
 		TransformationElement* trans_elem;
 		try{
 			trans_elem = new TransformationElement;
-			trans_elem->type = type;
-			trans_elems.push_back(trans_elem);
 		}
 		catch(std::bad_alloc& e){
-			goto finish;
+			cleanup();
+			return false;
 		}
+		trans_elem->type = type;
+		trans_elems.push_back(trans_elem);
 
 		switch(type){
 		case TransformationElement_Lookat:
@@ -97,11 +96,7 @@ bool Node::load(const daeElementRefArray& dae_elem_ref_array){
 			break;
 		}
 	}
-	result = true;
-finish:
-	if(!result)
-		cleanup();
-	return result;
+	return true;
 }
 void Node::load(TransformationElement* tarns_elem, const domLookat* dom_lookat){
 	size_t count = dom_lookat->getValue().getCount();
@@ -140,29 +135,31 @@ void Node::load(TransformationElement* tarns_elem, const domTranslate* dom_trans
 }
 
 bool Node::load(domNode* dom_node){
-	bool result = false;
 	// transformation_elements
-	if(!load(dom_node->getContents()))
-		goto finish;
+	if(!load(dom_node->getContents())){
+		cleanup();
+		return false;
+	}
 	// <instance_geometry>
 	size_t geom_count = dom_node->getInstance_geometry_array().getCount();
 	for(size_t i = 0; i < geom_count; i++){
 		domInstance_geometry* dom_inst_geom = dom_node->getInstance_geometry_array().get(i);
+		Geometry* geom;
 		try{
-			Geometry* geom = new Geometry;
-			geometries.push_back(geom);
-			if(!geom->load(dom_inst_geom))
-				goto finish;
+			geom = new Geometry;
 		}
 		catch(std::bad_alloc& e){
-			goto finish;
+			cleanup();
+			return false;
 		}
+		if(!geom->load(dom_inst_geom)){
+			delete geom;
+			cleanup();
+			return false;
+		}
+		geometries.push_back(geom);
 	}
-	result = true;
-finish:
-	if(!result)
-		cleanup();
-	return result;
+	return true;
 }
 
 void Node::addSibling(Node* sibling){
@@ -288,6 +285,77 @@ Node* NodeBank::addNode(unsigned int uid){
 
 ////////////////////////////////////////////////////////////////////////////////
 
+static void getFilePath(std::string* output, const char* uri){
+	const char* pos = strrchr(uri, '/');
+	if(pos == NULL)
+		return;
+	size_t len = pos - uri + 1;
+	output->resize(len);
+	size_t i;
+	for(i = 0; i < len; i++){
+		(*output)[i] = uri[i];
+	}
+}
+
+static void getFileName(std::string* output, const char* filepath){
+	const char* pos = strrchr(filepath, '/');
+	if(pos == NULL){
+		output->append(filepath);
+	}
+	else{
+		size_t start = pos - filepath + 1;
+		size_t len = strlen(filepath) - start;
+		output->resize(len);
+		size_t i;
+		for(i = 0; i < len; i++){
+			(*output)[i] = filepath[start+i];
+		}
+	}
+}
+
+Images::Images(){
+}
+
+Images::~Images(){
+	cleanup();
+}
+
+void Images::cleanup(){
+	path.clear();
+	StringPtrArray::iterator it = images.begin();
+	while(it != images.end()){
+		if(*it){
+			delete (*it);
+			(*it) = NULL;
+		}
+	}
+	images.clear();
+}
+
+bool Images::load(const char* path, const domLibrary_images* dom_lib_images){
+	const domImage_Array& dom_image_array = dom_lib_images->getImage_array();
+	const size_t count = dom_image_array.getCount();
+	for(size_t i = 0; i < count; i++){
+		const domImage* dom_image = dom_image_array.get(i);
+		const char* filepath = dom_image->getInit_from()->getValue().getPath();
+		std::string* filename;
+		try{
+			filename = new std::string;
+		}
+		catch(std::bad_alloc& e){
+			delete filename;
+			cleanup();
+			return false;
+		}
+		getFileName(filename, filepath);
+	}
+	this->path.append(path);
+
+	return true;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 Scene::Scene(){
 	root = NULL;
 }
@@ -301,24 +369,24 @@ void Scene::cleanup(){
 }
 
 bool Scene::load(domVisual_scene* dom_visual_scene){
-	bool result = false;
-	if(!node_bank.alloc(countGeometryNode(dom_visual_scene)))
-		goto finish;
+
+	if(!node_bank.alloc(countGeometryNode(dom_visual_scene))){
+		cleanup();
+		return false;
+	}
 	daeDatabase* dae_db = dom_visual_scene->getDAE()->getDatabase();
 	size_t node_count = dom_visual_scene->getNode_array().getCount();
 	for(size_t i = 0; i < node_count; i++){
-		if(!load(dae_db, dom_visual_scene->getNode_array().get(i), NULL))
-			goto finish;
+		if(!load(dae_db, dom_visual_scene->getNode_array().get(i), NULL)){
+			cleanup();
+			return false;
+		}
 	}
 #ifdef DEBUG
 	if(root)
 		root->update();
 #endif
-	result = true;
-finish:
-	if(!result)
-		cleanup();
-	return result;
+	return true;
 }
 
 bool Scene::load(daeDatabase* dae_db, domNode* dom_node, const char* parent){
@@ -448,12 +516,11 @@ const Node* Scene::findNode(const char* name) const{
 
 Collada::Collada(){
 	scene = NULL;
+	images = NULL;
 }
 
 Collada::~Collada(){
-	if(scene){
-		delete scene;
-	}
+	cleanup();
 }
 
 void Collada::cleanup(){
@@ -461,52 +528,95 @@ void Collada::cleanup(){
 		delete scene;
 		scene = NULL;
 	}
+	if(images){
+		delete images;
+		images = NULL;
+	}
 }
 
 bool Collada::load(const char* uri){
-	bool result = false;
+	// DAEの生成と読み込み
 	DAE* dae;
 	try{
 		dae = new DAE;
-		if(dae->load(uri) != DAE_OK){
-			goto finish;
-		}
 	}
 	catch(std::bad_alloc& e){
-		goto finish;
+		return false;
+	}
+	if(dae->load(uri) != DAE_OK){
+		dae->cleanup();
+		delete dae;
+		return false;
 	}
 
-	daeDatabase* dae_db = dae->getDatabase();
+	std::string path;
+	getFilePath(&path, uri);
 
+	// 各種読み込み	
+	daeDatabase* dae_db = dae->getDatabase();
+	// <library_images>
+	if(!loadLibraryImages(path.c_str(), dae_db)){
+		dae->cleanup();
+		delete dae;
+		cleanup();
+		return false;
+	}
+	// <scene>
+	if(!loadScene(dae_db)){
+		dae->cleanup();
+		delete dae;
+		cleanup();
+		return false;
+	}
+	return true;
+}
+
+bool Collada::loadLibraryImages(const char* path, daeDatabase* dae_db){
+	domLibrary_images* dom_lib_images;
+	dae_db->getElement((daeElement**)&dom_lib_images, 0, NULL, "image");
+	if(dom_lib_images){
+		try{
+			images = new Images;
+		}
+		catch(std::bad_alloc& e){
+			return false;
+		}
+		if(!images->load(path, dom_lib_images)){
+			delete images;
+			images = NULL;
+			return false;
+		}
+	}
+	return true;
+}
+
+bool Collada::loadScene(daeDatabase* dae_db){
 	// <scene>
 	domCOLLADA::domScene* dom_scene;
 	dae_db->getElement((daeElement**)&dom_scene, 0, NULL, "scene");
 	if(!dom_scene->getInstance_visual_scene()){
-		goto finish;
+		return false;
 	}
 	domInstanceWithExtra* dom_iwe = dom_scene->getInstance_visual_scene();
 	if(!dom_iwe)
-		goto finish;
-	const char* id = dom_iwe->getUrl().fragment().c_str();
+		return false;
+	const char* url = dom_iwe->getUrl().fragment().c_str();
 	domVisual_scene* dom_vis_scn;
-	if(dae_db->getElement((daeElement**)&dom_vis_scn, 0, id, "visual_scene") != DAE_OK)
-		goto finish;
+	if(dae_db->getElement((daeElement**)&dom_vis_scn, 0, url, "visual_scene") != DAE_OK)
+		return false;
 
 	try{
 		scene = new Scene;
-		if(!scene->load(dom_vis_scn))
-			goto finish;
 	}
 	catch(std::bad_alloc& e){
-		goto finish;
+		return false;
 	}
-	result = true;
-finish:
-	if(!result)
-		cleanup();
-	dae->cleanup();
-	delete dae;
-	return result;
+	if(!scene->load(dom_vis_scn)){
+		delete scene;
+		scene = NULL;
+		return false;
+	}
+	return true;
 }
 
 Node* Collada::findNode(const char* name){

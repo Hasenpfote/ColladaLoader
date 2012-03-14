@@ -8,7 +8,8 @@ void main (void){
 	vec3 fnormal = normalize(normal);
 	vec3 light = normalize(gl_LightSource[0].position.xyz - position);
 	float diffuse = dot(light, fnormal);
-	gl_FragColor = gl_FrontMaterial.emission + gl_FrontLightProduct[0].ambient;
+//	gl_FragColor = gl_FrontMaterial.emission + gl_FrontLightProduct[0].ambient;
+	gl_FragColor = gl_FrontLightProduct[0].ambient;
 	if(diffuse > 0.0){
 		vec3 view = normalize(position);
 		vec3 halfway = normalize(light - view);
