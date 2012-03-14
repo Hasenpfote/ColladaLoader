@@ -121,9 +121,6 @@ static void display(void){
 	glRotatef(-90, 1.0f, 0.0f, 0.0f);
 	r += 1.0f;
 	r = fmodf(r, 360.0f);
-#ifdef USE_SHADER
-	glUseProgram(glsl0.getProgram());
-#endif
 
 	const collada::Scene* scene = model->getScene();
 	const collada::Node* node = scene->findNode();
@@ -157,7 +154,9 @@ static void display(void){
 					glNormalPointer(GL_FLOAT, 0, &normal->f_array[0]);
 				}
 #ifdef USE_TEXTURE
+ #ifdef USE_SHADER
 				glUseProgram(glsl0.getProgram());
+ #endif
 				// テクスチャ座標
 				const collada::InputPtrArray* texcoords = (*triangles)[j]->getTexCoords();
 				if(texcoords){
@@ -165,7 +164,9 @@ static void display(void){
 					glClientActiveTexture(GL_TEXTURE0);
 					glEnable(GL_TEXTURE_2D);
 					if(material->getDiffuse()->sampler){
+ #ifdef USE_SHADER
 						glUseProgram(glsl1.getProgram());
+ #endif
 						glBindTexture(GL_TEXTURE_2D, textures[material->getDiffuse()->sampler->image_uid]);
 					}
 					glClientActiveTexture(GL_TEXTURE0);
