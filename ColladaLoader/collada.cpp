@@ -6,6 +6,10 @@ namespace collada{
 
 ////////////////////////////////////////////////////////////////////////////////
 
+std::string path; // 作業用パス
+
+////////////////////////////////////////////////////////////////////////////////
+
 #define INVALID_ID (unsigned int)-1
 
 /**
@@ -285,7 +289,7 @@ Node* NodeBank::addNode(unsigned int uid){
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static void getFilePath(std::string* output, const char* uri){
+void getFilePath(std::string* output, const char* uri){
 	const char* pos = strrchr(uri, '/');
 	if(pos == NULL)
 		return;
@@ -297,7 +301,7 @@ static void getFilePath(std::string* output, const char* uri){
 	}
 }
 
-static void getFileName(std::string* output, const char* filepath){
+void getFileName(std::string* output, const char* filepath){
 	const char* pos = strrchr(filepath, '/');
 	if(pos == NULL){
 		output->append(filepath);
@@ -322,37 +326,32 @@ Images::~Images(){
 
 void Images::cleanup(){
 	path.clear();
-	StringPtrArray::iterator it = images.begin();
-	while(it != images.end()){
-		if(*it){
-			delete (*it);
-			(*it) = NULL;
-		}
-	}
 	images.clear();
 }
 
-bool Images::load(const char* path, const domLibrary_images* dom_lib_images){
+bool Images::load(const domLibrary_images* dom_lib_images){
 	const domImage_Array& dom_image_array = dom_lib_images->getImage_array();
 	const size_t count = dom_image_array.getCount();
 	for(size_t i = 0; i < count; i++){
 		const domImage* dom_image = dom_image_array.get(i);
 		const char* filepath = dom_image->getInit_from()->getValue().getPath();
-		std::string* filename;
-		try{
-			filename = new std::string;
-		}
-		catch(std::bad_alloc& e){
-			delete filename;
-			cleanup();
-			return false;
-		}
-		getFileName(filename, filepath);
+		std::string filename;
+		getFileName(&filename, filepath);
+		images.push_back(filename.c_str());
 	}
-	this->path.append(path);
-
+	this->path.append(collada::path.c_str());
 	return true;
 }
+
+#ifdef DEBUG
+void Images::dump(){
+	StringArray::iterator it = images.begin();
+	while(it != images.end()){
+		printf("%s\n", it->c_str());
+		it++;
+	}
+}
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -549,43 +548,51 @@ bool Collada::load(const char* uri){
 		return false;
 	}
 
-	std::string path;
+	path.clear();
 	getFilePath(&path, uri);
 
 	// 各種読み込み	
 	daeDatabase* dae_db = dae->getDatabase();
 	// <library_images>
-	if(!loadLibraryImages(path.c_str(), dae_db)){
+	if(!loadLibraryImages(dae_db)){
 		dae->cleanup();
 		delete dae;
 		cleanup();
+		path.clear();
 		return false;
 	}
+#ifdef DEBUG
+	if(images){
+		images->dump();
+	}
+#endif
 	// <scene>
 	if(!loadScene(dae_db)){
 		dae->cleanup();
 		delete dae;
 		cleanup();
+		path.clear();
 		return false;
 	}
+	path.clear();
 	return true;
 }
 
-bool Collada::loadLibraryImages(const char* path, daeDatabase* dae_db){
+bool Collada::loadLibraryImages(daeDatabase* dae_db){
 	domLibrary_images* dom_lib_images;
-	dae_db->getElement((daeElement**)&dom_lib_images, 0, NULL, "image");
-	if(dom_lib_images){
-		try{
-			images = new Images;
-		}
-		catch(std::bad_alloc& e){
-			return false;
-		}
-		if(!images->load(path, dom_lib_images)){
-			delete images;
-			images = NULL;
-			return false;
-		}
+	dae_db->getElement((daeElement**)&dom_lib_images, 0, NULL, "library_images");
+	if(!dom_lib_images)
+		return false;
+	try{
+		images = new Images;
+	}
+	catch(std::bad_alloc& e){
+		return false;
+	}
+	if(!images->load(dom_lib_images)){
+		delete images;
+		images = NULL;
+		return false;
 	}
 	return true;
 }
@@ -617,16 +624,6 @@ bool Collada::loadScene(daeDatabase* dae_db){
 		return false;
 	}
 	return true;
-}
-
-Node* Collada::findNode(const char* name){
-	if(scene)
-		return scene->findNode(name);
-	return NULL;
-}
-
-const Node* Collada::findNode(const char* name) const{
-	return const_cast<Collada*>(this)->findNode(name);
 }
 
 } // namespace collada

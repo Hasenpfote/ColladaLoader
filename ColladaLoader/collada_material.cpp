@@ -1,6 +1,11 @@
+#include "crc32.h"
 #include "collada_material.h"
 
 namespace collada{
+
+extern std::string path;
+extern void getFilePath(std::string* output, const char* uri);
+extern void getFileName(std::string* output, const char* filepath);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -341,6 +346,20 @@ bool Material::load(Param* param, const domCommon_color_or_texture_type* dom_com
 #ifdef DEBUG
 		param->sampler->image.clear();
 		param->sampler->image.append(image);
+#endif
+#if 1
+		daeDatabase* dae_db = const_cast<domCommon_color_or_texture_type*>(dom_common_c_or_t_type)->getDAE()->getDatabase();
+		domImage* dom_image;
+		if(dae_db->getElement((daeElement**)&dom_image, 0, image, "image") != DAE_OK){
+			return false;
+		}
+		const char* filepath = dom_image->getInit_from()->getValue().getPath();
+		std::string image_name;
+		getFileName(&image_name, filepath);
+		std::string temp;
+		temp.append(path);
+		temp.append(image_name);
+		param->sampler->image_uid = calcCRC32(reinterpret_cast<const unsigned char*>(temp.c_str()));
 #endif
 	}
 	return true;

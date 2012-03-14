@@ -529,15 +529,7 @@ Geometry::Geometry(){
 }
 
 Geometry::~Geometry(){
-	if(mesh)
-		delete mesh;
-	std::map<unsigned int, Material*>::iterator it = bind_material.begin();
-	while(it != bind_material.end()){
-		if(it->second){
-			delete it->second;
-		}
-		it++;
-	}
+	cleanup();
 }
 
 void Geometry::cleanup(){

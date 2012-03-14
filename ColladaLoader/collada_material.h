@@ -43,6 +43,7 @@ public:
 		std::string texcoord;	// ここら辺は将来的にハッシュ値に
 		std::string image;		// ここら辺は将来的にハッシュ値に
 	#endif
+		unsigned int image_uid;
 		WrapMode wrap_s;
 		WrapMode wrap_t;
 		WrapMode wrap_p;

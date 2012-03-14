@@ -94,11 +94,16 @@ class Images{
 public:
 	Images();
 	~Images();
-	bool load(const char* path, const domLibrary_images*);
+	bool load(const domLibrary_images*);
 	void cleanup();
+#ifdef DEBUG
+	void dump();
+#endif
+	const std::string* getPath() const { return &path; }
+	const StringArray* getImages() const { return &images; }
 private:
 	std::string path;
-	StringPtrArray images;
+	StringArray images;
 };
 
 class Collada{
@@ -106,10 +111,10 @@ public:
 	Collada();
 	~Collada();
 	bool load(const char* uri);
-	Node* findNode(const char* name = NULL);
-	const Node* findNode(const char* name = NULL) const;
+	const Scene* getScene() const { return scene; }
+	const Images* getImages() const { return images; }
 private:
-	bool loadLibraryImages(const char* path, daeDatabase*);
+	bool loadLibraryImages(daeDatabase*);
 	bool loadScene(daeDatabase*);
 private:
 	void cleanup();
