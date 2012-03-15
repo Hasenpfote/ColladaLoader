@@ -6,6 +6,9 @@
 #include "glsl.h"
 #include "collada.h"
 #include "crc32.h"
+#include "vector.h"
+#include "quaternion.h"
+#include "matrix.h"
 
 // 光源
 static const GLfloat lightpos[] = {0.0f,100.0f,100.0f, 1.0f}; // 位置
@@ -109,18 +112,17 @@ void release(){
 }
 
 /**
- * GL用コールバック
+ * GLUT用コールバック
  */
 static void display(void){
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
-	gluLookAt(0.0, -2.5,20.5, 0.0, -2.5, 0.0, 0.0, 1.0, 0.0);
-
-	static float r = 0.0;
-	glRotatef(r, 0.0f, 1.0f, 0.0f);
-	glRotatef(-90, 1.0f, 0.0f, 0.0f);
-	r += 1.0f;
-	r = fmodf(r, 360.0f);
+	gluLookAt(0.0, 0.0,20.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+//	glPushMatrix();
+	mathematics::Quaternion q1;
+	mathematics::QuaternionRotation(&q1, &mathematics::Vector3(1.0f, 0.0f, 0.0f),-90.0f);
+	mathematics::Matrix44 matQ(q1);
+	glMultMatrixf(matQ);
 
 	const collada::Scene* scene = model->getScene();
 	const collada::Node* node = scene->findNode();
@@ -186,6 +188,7 @@ static void display(void){
 		}
 		node = node->getNext();
 	}
+//	glPopMatrix();
 #ifdef USE_SHADER
 	glUseProgram(0);
 #endif
@@ -193,14 +196,14 @@ static void display(void){
 }
 
 /**
- * GL用コールバック
+ * GLUT用コールバック
  */
 static void idle(void){
 	glutPostRedisplay();
 }
 
 /**
- * GL用コールバック
+ * GLUT用コールバック
  */
 static void resize(int w, int h){
 	glViewport(0, 0, w, h);
@@ -208,6 +211,25 @@ static void resize(int w, int h){
 	glLoadIdentity();
 	gluPerspective(30.0, (double)w / (double)h, 1.0, 100.0);
 	glMatrixMode(GL_MODELVIEW);
+}
+
+/**
+ * GLUT用コールバック
+ */
+void mouse(int button, int state, int x, int y){
+	if(button == GLUT_LEFT_BUTTON){
+		if(state == GLUT_DOWN){
+		}
+		else
+		if(state == GLUT_UP){
+		}
+	}
+}
+
+/**
+ * GLUT用コールバック
+ */
+void motion(int x, int y){
 }
 
 /**
@@ -233,8 +255,8 @@ int main(int argc, char *argv[]){
 	glutDisplayFunc(display);
 	glutIdleFunc(idle);
 	glutReshapeFunc(resize);
-	//glutMouseFunc(mouse);
-	//glutMotionFunc(motion);
+	glutMouseFunc(mouse);
+	glutMotionFunc(motion);
 	//glutKeyboardFunc(keyboard);
 	if(!init())
 		return EXIT_FAILURE;

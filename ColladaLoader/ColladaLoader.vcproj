@@ -212,6 +212,18 @@
 				RelativePath=".\main.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\matrix.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\quaternion.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\vector.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="ヘッダー ファイル"
@@ -251,7 +263,23 @@
 				>
 			</File>
 			<File
+				RelativePath=".\mathematics.h"
+				>
+			</File>
+			<File
+				RelativePath=".\matrix.h"
+				>
+			</File>
+			<File
+				RelativePath=".\quaternion.h"
+				>
+			</File>
+			<File
 				RelativePath=".\texture.h"
+				>
+			</File>
+			<File
+				RelativePath=".\vector.h"
 				>
 			</File>
 		</Filter>
