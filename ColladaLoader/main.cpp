@@ -1,6 +1,7 @@
 ﻿#include <iostream>
 #include <GL/glew.h>
-#include <GL/glut.h>
+//#include <GL/glut.h>
+#include <GL/freeglut.h>
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 #include "glsl.h"
@@ -9,6 +10,8 @@
 #include "vector.h"
 #include "quaternion.h"
 #include "matrix.h"
+
+using namespace mathematics;
 
 // 光源
 static const GLfloat lightpos[] = {0.0f,100.0f,100.0f, 1.0f}; // 位置
@@ -30,6 +33,11 @@ static Glsl glsl1;
 #define USE_TEXTURE
 static std::map<unsigned int, GLuint> textures;
 
+// カメラ
+static float fov = 45.0f;
+static float cam_pos_z = 20.0f;
+
+static Quaternion qc;
 /**
  * 初期化
  */
@@ -63,7 +71,6 @@ static bool init(void){
 		return false;
 	}
 #ifdef USE_SHADER
-//	if(!glsl0.create("shader/simple.vert", "shader/output_texture.frag"))
 	if(!glsl0.create("shader/simple.vert", "shader/mqo.frag"))
 		return false;
 	if(!glsl1.create("shader/simple.vert", "shader/mqo_tex.frag"))
@@ -117,12 +124,9 @@ void release(){
 static void display(void){
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
-	gluLookAt(0.0, 0.0,20.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
-//	glPushMatrix();
-	mathematics::Quaternion q1;
-	mathematics::QuaternionRotation(&q1, &mathematics::Vector3(1.0f, 0.0f, 0.0f),-90.0f);
-	mathematics::Matrix44 matQ(q1);
-	glMultMatrixf(matQ);
+	gluLookAt(0.0, 0.0, cam_pos_z, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+	mathematics::Matrix44 matR(qc);
+	glMultMatrixf(matR);
 
 	const collada::Scene* scene = model->getScene();
 	const collada::Node* node = scene->findNode();
@@ -209,16 +213,20 @@ static void resize(int w, int h){
 	glViewport(0, 0, w, h);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(30.0, (double)w / (double)h, 1.0, 100.0);
+	gluPerspective((double)fov, (double)w / (double)h, 1.0, 100.0);
 	glMatrixMode(GL_MODELVIEW);
 }
 
+static int begin_pos_x;
+static int begin_pos_y;
 /**
  * GLUT用コールバック
  */
 void mouse(int button, int state, int x, int y){
 	if(button == GLUT_LEFT_BUTTON){
 		if(state == GLUT_DOWN){
+			begin_pos_x = x;
+			begin_pos_y = y;
 		}
 		else
 		if(state == GLUT_UP){
@@ -230,6 +238,26 @@ void mouse(int button, int state, int x, int y){
  * GLUT用コールバック
  */
 void motion(int x, int y){
+	GLint vp[4];
+	glGetIntegerv(GL_VIEWPORT, vp);
+	float dx = (float)(x - begin_pos_x) / vp[2];
+	float dy = (float)(begin_pos_y - y) / vp[3];
+	float sq = sqrtf(dx*dx+dy*dy);
+	if(sq > 0.0f){
+		Quaternion q;
+		QuaternionRotation(&q, &Vector3(dy/sq, dx/sq, 0.0f), sq * 10.0f);
+//		QuaternionMul(&qc, &q, &qc);
+		QuaternionMul(&qc, &qc, &q);
+	}
+}
+
+/**
+ * FREEGLUT用コールバック
+ */
+void MouseWheel(int wheel_number, int direction, int x, int y){
+	cam_pos_z -= (float)direction * 0.1f;
+	if(cam_pos_z < 1.0f)
+		cam_pos_z = 1.0f;
 }
 
 /**
@@ -258,6 +286,7 @@ int main(int argc, char *argv[]){
 	glutMouseFunc(mouse);
 	glutMotionFunc(motion);
 	//glutKeyboardFunc(keyboard);
+	glutMouseWheelFunc(MouseWheel);
 	if(!init())
 		return EXIT_FAILURE;
 	glutMainLoop();

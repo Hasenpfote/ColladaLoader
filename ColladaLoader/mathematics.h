@@ -6,10 +6,10 @@
 #define PI 3.141592654f
 #define RIGHT_HANDED_SYSTEM
 #define COLUMN_MAJOR
+#define ToDegree(radian) ((radian) * (180.0f / PI))
+#define ToRadian(degree) ((degree) * (PI / 180.0f))
 
 namespace mathematics{
 
-#define ToDegree(radian) ((radian) * (180.0f / PI))
-#define ToRadian(degree) ((degree) * (PI / 180.0f))
 
 } // namespace mathematics
