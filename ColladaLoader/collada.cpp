@@ -71,6 +71,7 @@ bool Node::load(const daeElementRefArray& dae_elem_ref_array){
 			trans_elem = new TransformationElement;
 		}
 		catch(std::bad_alloc& e){
+			Log_e("could not allocate memory.\n");
 			cleanup();
 			return false;
 		}
@@ -141,6 +142,7 @@ void Node::load(TransformationElement* tarns_elem, const domTranslate* dom_trans
 bool Node::load(domNode* dom_node){
 	// transformation_elements
 	if(!load(dom_node->getContents())){
+		Log_e("could not load transformation_elements.\n");
 		cleanup();
 		return false;
 	}
@@ -153,10 +155,12 @@ bool Node::load(domNode* dom_node){
 			geom = new Geometry;
 		}
 		catch(std::bad_alloc& e){
+			Log_e("could not allocate memory.\n");
 			cleanup();
 			return false;
 		}
 		if(!geom->load(dom_inst_geom)){
+			Log_e("could not load Geometry(%d).\n", i);
 			delete geom;
 			cleanup();
 			return false;
@@ -232,7 +236,7 @@ bool NodeBank::alloc(size_t size){
 		}
 	}
 	catch(std::bad_alloc& e){
-		Log_e("exception: %s", e.what());
+		Log_e("could not allocate memory.\n");
 		return false;
 	}
 	this->size = actual_size;
@@ -368,7 +372,6 @@ void Scene::cleanup(){
 }
 
 bool Scene::load(domVisual_scene* dom_visual_scene){
-
 	if(!node_bank.alloc(countGeometryNode(dom_visual_scene))){
 		cleanup();
 		return false;
@@ -377,6 +380,7 @@ bool Scene::load(domVisual_scene* dom_visual_scene){
 	size_t node_count = dom_visual_scene->getNode_array().getCount();
 	for(size_t i = 0; i < node_count; i++){
 		if(!load(dae_db, dom_visual_scene->getNode_array().get(i), NULL)){
+			Log_e("could not load Node(%d).\n", i);
 			cleanup();
 			return false;
 		}
@@ -417,8 +421,10 @@ bool Scene::load(daeDatabase* dae_db, domNode* dom_node, const char* parent){
 #endif
 	}
 	Node* node = node_bank.create(id);
-	if(!node->load(dom_node))
+	if(!node->load(dom_node)){
+		Log_e("could not load Node.\n");
 		return false;
+	}
 #ifdef DEBUG
 	node->name.append(myname);
 #endif
@@ -441,13 +447,17 @@ bool Scene::load(daeDatabase* dae_db, domNode* dom_node, const char* parent){
 
 	size_t node_count = dom_node->getNode_array().getCount();
 	for(size_t i = 0; i < node_count; i++){
-		if(!load(dae_db, dom_node->getNode_array().get(i), NULL))
+		if(!load(dae_db, dom_node->getNode_array().get(i), NULL)){
+			Log_e("could not load Node(%d).\n", i);
 			return false;
+		}
 	}
 	size_t inode_count = dom_node->getInstance_node_array().getCount();
 	for(size_t i = 0; i < inode_count; i++){
-		if(!load(dae_db, dom_node->getInstance_node_array().get(i), dom_node->getID()))
+		if(!load(dae_db, dom_node->getInstance_node_array().get(i), dom_node->getID())){
+			Log_e("could not load Node(%d).\n", i);
 			return false;
+		}
 	}
 	return true;
 }
@@ -455,8 +465,10 @@ bool Scene::load(daeDatabase* dae_db, domNode* dom_node, const char* parent){
 bool Scene::load(daeDatabase* dae_db, domInstance_node* dom_inst_node, const char* parent){
 	const char* type = dom_inst_node->getUrl().fragment().c_str();
 	domNode* dom_node;
-	if(const_cast<daeDatabase*>(dae_db)->getElement((daeElement**)&dom_node, 0, type, "node") != DAE_OK)
+	if(const_cast<daeDatabase*>(dae_db)->getElement((daeElement**)&dom_node, 0, type, "node") != DAE_OK){
+		Log_e("element <node> %s not found.\n", type);
 		return false;
+	}
 	if(!isGeometryNode(dom_node))
 		return true;
 
@@ -467,8 +479,10 @@ bool Scene::load(daeDatabase* dae_db, domInstance_node* dom_inst_node, const cha
 	name.append("\0");
 	unsigned int id = calcCRC32(reinterpret_cast<const unsigned char*>(name.c_str()));
 	Node* node = node_bank.create(id);
-	if(!node->load(dom_node))
+	if(!node->load(dom_node)){
+		Log_e("could not load Node(%s).\n", name.c_str());
 		return false;
+	}
 #ifdef DEBUG
 	node->name.append(name);
 #endif
@@ -488,13 +502,17 @@ bool Scene::load(daeDatabase* dae_db, domInstance_node* dom_inst_node, const cha
 
 	size_t node_count = dom_node->getNode_array().getCount();
 	for(size_t i = 0; i < node_count; i++){
-		if(!load(dae_db, dom_node->getNode_array().get(i), name.c_str()))
+		if(!load(dae_db, dom_node->getNode_array().get(i), name.c_str())){
+			Log_e("could not load Node(%s).\n", name.c_str());
 			return false;
+		}
 	}
 	size_t inode_count = dom_node->getInstance_node_array().getCount();
 	for(size_t i = 0; i < inode_count; i++){
-		if(!load(dae_db, dom_node->getInstance_node_array().get(i), name.c_str()))
+		if(!load(dae_db, dom_node->getInstance_node_array().get(i), name.c_str())){
+			Log_e("could not load Node(%s).\n", name.c_str());
 			return false;
+		}
 	}
 	return true;
 }
@@ -540,9 +558,11 @@ bool Collada::load(const char* uri){
 		dae = new DAE;
 	}
 	catch(std::bad_alloc& e){
+		Log_e("could not allocate memory.\n");
 		return false;
 	}
 	if(dae->load(uri) != DAE_OK){
+		Log_e("could not load DAE.\n");
 		dae->cleanup();
 		delete dae;
 		return false;
@@ -555,6 +575,7 @@ bool Collada::load(const char* uri){
 	daeDatabase* dae_db = dae->getDatabase();
 	// <library_images>
 	if(!loadLibraryImages(dae_db)){
+		Log_e("could not load LibraryImages.\n");
 		dae->cleanup();
 		delete dae;
 		cleanup();
@@ -568,6 +589,7 @@ bool Collada::load(const char* uri){
 #endif
 	// <scene>
 	if(!loadScene(dae_db)){
+		Log_e("could not load Scene.\n");
 		dae->cleanup();
 		delete dae;
 		cleanup();
@@ -581,15 +603,19 @@ bool Collada::load(const char* uri){
 bool Collada::loadLibraryImages(daeDatabase* dae_db){
 	domLibrary_images* dom_lib_images;
 	dae_db->getElement((daeElement**)&dom_lib_images, 0, NULL, "library_images");
-	if(!dom_lib_images)
+	if(!dom_lib_images){
+		Log_e("element <library_images> not found.\n");
 		return false;
+	}
 	try{
 		images = new Images;
 	}
 	catch(std::bad_alloc& e){
+		Log_e("could not allocate memory.\n");
 		return false;
 	}
 	if(!images->load(dom_lib_images)){
+		Log_e("could not load Images.\n");
 		delete images;
 		images = NULL;
 		return false;
@@ -602,23 +628,30 @@ bool Collada::loadScene(daeDatabase* dae_db){
 	domCOLLADA::domScene* dom_scene;
 	dae_db->getElement((daeElement**)&dom_scene, 0, NULL, "scene");
 	if(!dom_scene->getInstance_visual_scene()){
+		Log_e("failed to get.\n");
 		return false;
 	}
 	domInstanceWithExtra* dom_iwe = dom_scene->getInstance_visual_scene();
-	if(!dom_iwe)
+	if(!dom_iwe){
+		Log_e("failed to get.\n");
 		return false;
+	}
 	const char* url = dom_iwe->getUrl().fragment().c_str();
 	domVisual_scene* dom_vis_scn;
-	if(dae_db->getElement((daeElement**)&dom_vis_scn, 0, url, "visual_scene") != DAE_OK)
+	if(dae_db->getElement((daeElement**)&dom_vis_scn, 0, url, "visual_scene") != DAE_OK){
+		Log_e("elemnt <visual_scene> %s not found.\n", url);
 		return false;
+	}
 
 	try{
 		scene = new Scene;
 	}
 	catch(std::bad_alloc& e){
+		Log_e("could not allocate memory.\n");
 		return false;
 	}
 	if(!scene->load(dom_vis_scn)){
+		Log_e("could not load Scene.\n");
 		delete scene;
 		scene = NULL;
 		return false;

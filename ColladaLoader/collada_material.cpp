@@ -1,5 +1,6 @@
 #include "crc32.h"
 #include "collada_material.h"
+#include "log.h"
 
 namespace collada{
 
@@ -102,11 +103,13 @@ bool Material::load(domInstance_material* dom_inst_mtrl){
 	// <library_materials>
 	domMaterial* dom_mtrl;
 	if(dae_db->getElement((daeElement**)&dom_mtrl, 0, target, "material") != DAE_OK){
+		Log_e("element <material> %s not found.\n", target);
 		cleanup();
 		return false;
 	}
 	domInstance_effect* dom_inst_effect = dom_mtrl->getInstance_effect();
 	if(!dom_inst_effect){
+		Log_e("failed to get.\n", target);
 		cleanup();
 		return false;
 	}
@@ -114,6 +117,7 @@ bool Material::load(domInstance_material* dom_inst_mtrl){
 	const char* url = dom_inst_effect->getUrl().fragment().c_str();
 	domEffect* dom_effect;
 	if(dae_db->getElement((daeElement**)&dom_effect, 0, url, "effect") != DAE_OK){
+		Log_e("element <effect> %s not found.\n", url);
 		cleanup();
 		return false;
 	}
@@ -126,6 +130,7 @@ bool Material::load(domInstance_material* dom_inst_mtrl){
 		if(strcmp(dom_fx_abst->getTypeName(), "profile_COMMON") == 0){
 			domProfile_COMMON* dom_prof_common = dynamic_cast<domProfile_COMMON*>(dom_fx_abst);
 			if(!load(dom_prof_common)){
+				Log_e("could not load <profile_COMMON>.\n");
 				cleanup();
 				return false;
 			}
@@ -134,6 +139,7 @@ bool Material::load(domInstance_material* dom_inst_mtrl){
 		}
 	}
 	if(!find){
+		Log_e("material not found.\n");
 		cleanup();
 		return false;
 	}
@@ -147,10 +153,12 @@ bool Material::load(domInstance_material* dom_inst_mtrl){
 			vi = new VertexInput;
 		}
 		catch(std::bad_alloc& e){
+			Log_e("could not allocate memory.\n");
 			cleanup();
 			return false;
 		}
 		if(!vi->load(dom_bind_vert_input)){
+			Log_e("could not load VertexInput(%d).\n", i);
 			delete vi;
 			cleanup();
 			return false;
@@ -306,6 +314,7 @@ bool Material::load(Param* param, const domCommon_color_or_texture_type* dom_com
 			param->sampler = new Sampler;
 		}
 		catch(std::bad_alloc& e){
+			Log_e("could not allocate memory.\n");
 			return false;
 		}
 
@@ -351,6 +360,7 @@ bool Material::load(Param* param, const domCommon_color_or_texture_type* dom_com
 		daeDatabase* dae_db = const_cast<domCommon_color_or_texture_type*>(dom_common_c_or_t_type)->getDAE()->getDatabase();
 		domImage* dom_image;
 		if(dae_db->getElement((daeElement**)&dom_image, 0, image, "image") != DAE_OK){
+			Log_e("element <image> %s not found.\n", image);
 			return false;
 		}
 		const char* filepath = dom_image->getInit_from()->getValue().getPath();

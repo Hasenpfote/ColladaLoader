@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "log.h"
 #include "glsl.h"
 
 Glsl::Glsl(){
@@ -24,7 +25,7 @@ bool Glsl::create(const char* vert, const char* frag){
 
 	program = glCreateProgram();
 	if(program == 0){
-		fprintf(stderr, "Could not create program.\n");
+		Log_e("could not create program.\n");
 		glDeleteShader(vertShader);
 		glDeleteShader(fragShader);
 		return false;
@@ -39,7 +40,7 @@ bool Glsl::create(const char* vert, const char* frag){
 	printProgramInfoLog(program);
 #endif // _DEBUG
 	if(linked == GL_FALSE){
-		fprintf(stderr, "Link error.\n");
+		Log_e("failed to link.\n");
 		glDetachShader(program, vertShader);
 		glDetachShader(program, fragShader);
 		glDeleteShader(vertShader);
@@ -66,7 +67,7 @@ bool Glsl::read(GLuint shader, const char* filename){
 	GLchar* source = (GLchar*)malloc(length);
 	if(source == NULL){
 		fclose(fp);
-		fprintf(stderr, "Could not allocate read buffer.\n");
+		Log_e("could not allocate memory.\n");
 		return result;
 	}
 	fseek(fp, 0L, SEEK_SET);
@@ -79,7 +80,7 @@ bool Glsl::read(GLuint shader, const char* filename){
 		result = true;
 	}
 	else{
-		fprintf(stderr, "Could not read file: %s.\n", filename);
+		Log_e("could not read file(%s).\n", filename);
 	}
 	free((void*)source);
 
@@ -89,7 +90,7 @@ bool Glsl::read(GLuint shader, const char* filename){
 bool Glsl::createVertexShader(GLuint* shader, const char* vert){
 	(*shader) = glCreateShader(GL_VERTEX_SHADER);
 	if((*shader) == 0){
-		fprintf(stderr, "Could not create vertex shader.\n");
+		Log_e("could not create vertex shader.\n");
 		return false;
 	}
 	if(!read((*shader), vert)){
@@ -103,7 +104,7 @@ bool Glsl::createVertexShader(GLuint* shader, const char* vert){
 	printShaderInfoLog((*shader));
 #endif // _DEBUG
 	if(compiled == GL_FALSE) {
-		fprintf(stderr, "Compile error in vertex shader.\n");
+		Log_e("failed to compile in vertex shader.\n");
 		glDeleteShader((*shader));
 		return false;
 	}
@@ -113,7 +114,7 @@ bool Glsl::createVertexShader(GLuint* shader, const char* vert){
 bool Glsl::createFragmentShader(GLuint* shader, const char* frag){
 	(*shader) = glCreateShader(GL_FRAGMENT_SHADER);
 	if((*shader) == 0){
-		fprintf(stderr, "Could not create fragment shader.\n");
+		Log_e("could not create fragment shader.\n");
 		return false;
 	}
 	if(!read((*shader), frag)){
@@ -127,7 +128,7 @@ bool Glsl::createFragmentShader(GLuint* shader, const char* frag){
 	printShaderInfoLog((*shader));
 #endif // _DEBUG
 	if(compiled == GL_FALSE) {
-		fprintf(stderr, "Compile error in fragment shader.\n");
+		Log_e("failed to compile in fragment shader.\n");
 		glDeleteShader((*shader));
 		return false;
 	}
@@ -148,7 +149,7 @@ void Glsl::printShaderInfoLog(GLuint shader){
 			free((void*)infoLog);
 		}
 		else{
-			fprintf(stderr, "Could not allocate InfoLog buffer.\n");
+			Log_e("could not allocate memory.\n");
 		}
 	}
 }
@@ -166,7 +167,7 @@ void Glsl::printProgramInfoLog(GLuint program){
 			free((void*)infoLog);
 		}
 		else{
-			fprintf(stderr, "Could not allocate InfoLog buffer.\n");
+			Log_e("could not allocate memory.\n");
 		}
 	}
 }

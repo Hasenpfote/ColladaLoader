@@ -1,7 +1,7 @@
 #include "collada.h"
 #include "crc32.h"
 #include "log.h"
-#include <bitset>
+//#include <bitset>
 
 namespace collada{
 
@@ -39,6 +39,7 @@ static bool load(Input* input, domUint offset, const domP* dom_p, domUint max_of
 	const char*	source = dom_accessor->getSource().fragment().c_str();
 	domFloat_array* dom_float_array;
 	if(dae_db->getElement((daeElement**)&dom_float_array, 0, source, "float_array") != DAE_OK){
+		Log_e("element <float_array> %s not found.\n", source);
 		return false;
 	}
 
@@ -107,26 +108,34 @@ bool Triangles::load(const domInputLocalOffset* dom_ilo, const domP* dom_p, domU
 	// 参照している<source>を取得
 	const char* source = dom_ilo->getSource().fragment().c_str();
 	domSource* dom_source;
-	if(dae_db->getElement((daeElement**)&dom_source, 0, source, "source") != DAE_OK)
+	if(dae_db->getElement((daeElement**)&dom_source, 0, source, "source") != DAE_OK){
+		Log_e("element <source> %s not found.\n", source);
 		return false;
+	}
 	// <technique_common>を取得
 	domSource::domTechnique_common* dom_tech_common = dom_source->getTechnique_common();
-	if(!dom_tech_common)
+	if(!dom_tech_common){
+		Log_e("failed to get.\n");
 		return false;
+	}
 	// <accessor>を取得
 	const domAccessor* dom_accessor = dom_tech_common->getAccessor();
-	if(!dom_accessor)
+	if(!dom_accessor){
+		Log_e("failed to get.\n");
 		return false;
+	}
 
 	Input* input;
 	try{
 		input = new Input;
 	}
 	catch(std::bad_alloc& e){
+		Log_e("could not allocate memory.\n");
 		return false;
 	}
 
 	if(!collada::load(input, dom_ilo->getOffset(), dom_p, max_offset, dom_accessor)){
+		Log_e("could not load.\n", source);
 		delete input;
 		return false;
 	}
@@ -147,6 +156,7 @@ bool Triangles::load(const domInputLocalOffset* dom_ilo, const domP* dom_p, domU
 				texcoords = new InputPtrArray;
 			}
 			catch(std::bad_alloc& e){
+				Log_e("could not allocate memory.\n");
 				delete input;
 				return false;
 			}
@@ -168,22 +178,28 @@ bool Triangles::load(const domInputLocal* dom_il, const domP* dom_p, domUint max
 		return false;
 	// <technique_common>を取得
 	domSource::domTechnique_common* dom_tech_common = dom_source->getTechnique_common();
-	if(!dom_tech_common)
+	if(!dom_tech_common){
+		Log_e("failed to get.\n");
 		return false;
+	}
 	// <accessor>を取得
 	const domAccessor* dom_accessor = dom_tech_common->getAccessor();
-	if(!dom_accessor)
+	if(!dom_accessor){
+		Log_e("failed to get.\n");
 		return false;
+	}
 
 	Input* input;
 	try{
 		input = new Input;
 	}
 	catch(std::bad_alloc& e){
+		Log_e("could not allocate memory.\n");
 		return false;
 	}
 
 	if(!collada::load(input, offset, dom_p, max_offset, dom_accessor)){
+		Log_e("could not load.\n");
 		delete input;
 		return false;
 	}
@@ -204,6 +220,7 @@ bool Triangles::load(const domInputLocal* dom_il, const domP* dom_p, domUint max
 				texcoords = new InputPtrArray;
 			}
 			catch(std::bad_alloc& e){
+				Log_e("could not allocate memory.\n");
 				delete input;
 				return false;
 			}
@@ -238,6 +255,7 @@ bool Triangles::load(domTriangles* dom_tri){
 			const char* source = dom_ilo->getSource().fragment().c_str();
 			domVertices* dom_verts;
 			if(dom_tri->getDAE()->getDatabase()->getElement((daeElement**)&dom_verts, 0, source, "vertices") != DAE_OK){
+				Log_e("element <vertices> %s not found.\n", source);
 				cleanup();
 				return false;
 			}
@@ -246,6 +264,7 @@ bool Triangles::load(domTriangles* dom_tri){
 			for(size_t j = 0; j < input_count; j++){
 				domInputLocal* dom_il = dom_verts->getInput_array().get(i);
 				if(!load(dom_il, dom_p, max_offset, dom_ilo->getOffset(), dom_ilo->getSet())){
+					Log_e("could not load.\n");
 					cleanup();
 					return false;
 				}
@@ -253,6 +272,7 @@ bool Triangles::load(domTriangles* dom_tri){
 		}
 		else{
 			if(!load(dom_ilo, dom_p, max_offset)){
+				Log_e("could not load.\n");
 				cleanup();
 				return false;
 			}
@@ -260,6 +280,7 @@ bool Triangles::load(domTriangles* dom_tri){
 	}
 	// 展開した配列を圧縮しインデクス化する
 	if(!optimize()){
+		Log_e("could not optimize.\n");
 		cleanup();
 		return false;
 	}
@@ -343,6 +364,7 @@ bool Triangles::optimize(){
 		flags = new size_t[flag_size];
 	}
 	catch(std::bad_alloc& e){
+		Log_e("could not allocate memory.\n");
 		return false; // flagsでthrowされた場合、上位でcleanupしているので問題ない
 	}
 
@@ -498,6 +520,7 @@ bool Mesh::load(domMesh* dom_mesh){
 			triangles = new TrianglesPtrArray;
 		}
 		catch(std::bad_alloc& e){
+			Log_e("could not allocate memory.\n");
 			cleanup();
 			return false;
 		}
@@ -509,10 +532,12 @@ bool Mesh::load(domMesh* dom_mesh){
 			tri = new Triangles;
 		}
 		catch(std::bad_alloc& e){
+			Log_e("could not allocate memory.\n");
 			cleanup();
 			return false;
 		}
 		if(!tri->load(dom_tri)){
+			Log_e("could not load Triangles(%d).\n", i);
 			delete tri;
 			cleanup();
 			return false;
@@ -559,10 +584,12 @@ bool Geometry::load(domInstance_geometry* dom_inst_geom){
 	// <geometry>
 	domGeometry* dom_geom;
 	if(dom_inst_geom->getDAE()->getDatabase()->getElement((daeElement**)&dom_geom, 0, url, "geometry") != DAE_OK){
+		Log_e("element <geometry> %s not found.\n", url);
 		cleanup();
 		return false;
 	}
 	if(!load(dom_geom)){
+		Log_e("could not load.\n");
 		cleanup();
 		return false;
 	}
@@ -590,10 +617,12 @@ bool Geometry::load(domGeometry* dom_geom){
 			mesh = new Mesh;
 		}
 		catch(std::bad_alloc& e){
+			Log_e("could not allocate memory.\n");
 			cleanup();
 			return false;
 		}
 		if(!mesh->load(dom_mesh)){
+			Log_e("could not load Mesh.\n");
 			cleanup();
 			return false;
 		}
@@ -613,6 +642,7 @@ bool Geometry::load(domBind_material* dom_bind_mtrl){
 			mtrl = new Material;
 		}
 		catch(std::bad_alloc& e){
+			Log_e("could not allocate memory.\n");
 			cleanup();
 			return false;
 		}
@@ -621,6 +651,7 @@ bool Geometry::load(domBind_material* dom_bind_mtrl){
 		mtrl->symbol.append(dom_inst_mtrl->getSymbol());
 #endif
 		if(!mtrl->load(dom_inst_mtrl)){
+			Log_e("could not load Material(%d).\n", i);
 			delete mtrl;
 			cleanup();
 			return false;
