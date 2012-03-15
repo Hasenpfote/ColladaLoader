@@ -3,6 +3,34 @@
 
 namespace mathematics{
 
+const Quaternion operator * (float s, const Quaternion& q){
+	return Quaternion(q.w * s, q.x * s, q.y * s, q.z * s);
+}
+
+Quaternion* QuaternionAdd(Quaternion* out, const Quaternion* q1, const Quaternion* q2){
+	out->w = q1->w + q2->w;
+	out->x = q1->x + q2->x;
+	out->y = q1->y + q2->y;
+	out->z = q1->z + q2->z;
+	return out;
+}
+
+Quaternion* QuaternionSub(Quaternion* out, const Quaternion* q1, const Quaternion* q2){
+	out->w = q1->w - q2->w;
+	out->x = q1->x - q2->x;
+	out->y = q1->y - q2->y;
+	out->z = q1->z - q2->z;
+	return out;
+}
+
+Quaternion* QuaternionScale(Quaternion* out, const Quaternion* q, float s){
+	out->w = q->w * s;
+	out->x = q->x * s;
+	out->y = q->y * s;
+	out->z = q->z * s;
+	return out;
+}
+
 /**
  * 乗算
  * @param out 出力
@@ -82,12 +110,12 @@ Quaternion* QuaternionRotationArc(Quaternion* out, const Vector3* nv1, const Vec
  * @param q クォータニオン
  */
 Quaternion* QuaternionNormalize(Quaternion* out, const Quaternion* q){
-	const float rn = 1.0f / q->norm();
-	out->w = q->w * rn;
-	out->x = q->x * rn;
-	out->y = q->y * rn;
-	out->z = q->z * rn;
-	return out;
+	const float n = q->norm();
+#ifdef _DEBUG
+	if(n < EPSILON){
+	}
+#endif
+	return QuaternionScale(out, out, 1.0f/n);
 }
 
 /**

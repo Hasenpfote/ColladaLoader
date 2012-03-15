@@ -17,15 +17,24 @@ public:
 	inline void set(float w, float x, float y, float z){ this->w = w; this->x = x; this->y = y; this->z = z; }
 	inline void set(const float* a){ this->a[0] = a[0]; this->a[1] = a[1]; this->a[2] = a[2]; this->a[3] = a[3]; }
 	// casting
-	operator float* (){ return a; }
-	operator const float* () const { return reinterpret_cast<const float*>(a); }
+	inline operator float* (){ return a; }
+	inline operator const float* () const { return reinterpret_cast<const float*>(a); }
 	// assignment operator's
 	Quaternion& operator = (const Quaternion& v){ set(v); return *this; }
 	Quaternion& operator = (const float* v){ set(v); return *this; }
+	Quaternion& operator += (const Quaternion& q){ w += q.w; x += q.x; y += q.y; z += q.z; return *this; }
+	Quaternion& operator -= (const Quaternion& q){ w -= q.w; x -= q.x; y -= q.y; z -= q.z; return *this; }
+	Quaternion& operator *= (float s){ w *= s; x *= s; y *= s; z *= s; return *this; }
+	Quaternion& operator /= (float s){ w /= s; x /= s; y /= s; z /= s; return *this; }
 	// unary operators
-	const Quaternion operator + () const { return *this; }
-	const Quaternion operator - () const { return Quaternion(-w, -x, -y, -z); }
+	inline const Quaternion operator + () const { return *this; }
+	inline const Quaternion operator - () const { return Quaternion(-w, -x, -y, -z); }
 	// binary operator's
+	inline const Quaternion operator + (const Quaternion& q) const { return Quaternion(w + q.w, x + q.x, y + q.y, z + q.z); }
+	inline const Quaternion operator - (const Quaternion& q) const { return Quaternion(w - q.w, x - q.x, y - q.y, z - q.z); }
+	inline const Quaternion operator * (float s) const { return Quaternion(w * s, x * s, y * s, z * s); }
+	inline const Quaternion operator / (float s) const { return Quaternion(w / s, x / s, y / s, z / s); }
+	friend const Quaternion operator * (float s, const Quaternion& q);
 	bool operator == (const Quaternion& q) const {
 		if(fabsf(w - q.w) >= EPSILON) return false;
 		if(fabsf(x - q.x) >= EPSILON) return false;
@@ -41,7 +50,7 @@ public:
 		return false;
 	}
 	// operation's
-	float norm() const { return sqrtf(w*w+x*x+y*y+z*z); }
+	inline float norm() const { return sqrtf(w*w+x*x+y*y+z*z); }
 public:
 	union{
 		struct{
@@ -55,6 +64,9 @@ public:
 };
 
 // operation's
+Quaternion* QuaternionAdd(Quaternion* out, const Quaternion* q1, const Quaternion* q2);
+Quaternion* QuaternionSub(Quaternion* out, const Quaternion* q1, const Quaternion* q2);
+Quaternion* QuaternionScale(Quaternion* out, const Quaternion* q, float s);
 Quaternion* QuaternionMul(Quaternion* out, const Quaternion* q1, const Quaternion* q2);
 Quaternion* QuaternionConjugate(Quaternion* out, const Quaternion* q);
 Quaternion* QuaternionRotation(Quaternion* out, const Vector3* axis, float angle);

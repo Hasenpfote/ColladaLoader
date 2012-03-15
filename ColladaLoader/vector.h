@@ -15,23 +15,23 @@ public:
 	inline void set(float x, float y, float z){ this->x = x; this->y = y; this->z = z; }
 	inline void set(const float* a){ this->a[0] = a[0]; this->a[1] = a[1]; this->a[2] = a[2]; }
 	// casting
-	operator float* (){ return a; }
-	operator const float* () const { return reinterpret_cast<const float*>(a); }
+	inline operator float* (){ return a; }
+	inline operator const float* () const { return reinterpret_cast<const float*>(a); }
 	// assignment operator's
-	Vector3& operator = (const Vector3& v){ set(v); return *this; }
-	Vector3& operator = (const float* v){ set(v); return *this; }
-	Vector3& operator += (const Vector3& v){ x += v.x; y += v.y; z += v.z; return *this; }
-	Vector3& operator -= (const Vector3& v){ x -= v.x; y -= v.y; z -= v.z; return *this; }
-	Vector3& operator *= (float s){ x *= s; y *= s; z *= s; return *this; }
-	Vector3& operator /= (float s){ x /= s; y /= s; z /= s; return *this; }
+	inline Vector3& operator = (const Vector3& v){ set(v); return *this; }
+	inline Vector3& operator = (const float* v){ set(v); return *this; }
+	inline Vector3& operator += (const Vector3& v){ x += v.x; y += v.y; z += v.z; return *this; }
+	inline Vector3& operator -= (const Vector3& v){ x -= v.x; y -= v.y; z -= v.z; return *this; }
+	inline Vector3& operator *= (float s){ x *= s; y *= s; z *= s; return *this; }
+	inline Vector3& operator /= (float s){ x /= s; y /= s; z /= s; return *this; }
 	// unary operators
-	const Vector3 operator + () const { return *this; }
-	const Vector3 operator - () const { return Vector3(-x, -y, -z); }
+	inline const Vector3 operator + () const { return *this; }
+	inline const Vector3 operator - () const { return Vector3(-x, -y, -z); }
 	// binary operator's
-	const Vector3 operator + (const Vector3& v) const { return Vector3(x + v.x, y + v.y, z + v.z); }
-	const Vector3 operator - (const Vector3& v) const { return Vector3(x - v.x, y - v.y, z - v.z); }
-	const Vector3 operator * (float s) const { return Vector3(x * s, y * s, z * s); }
-	const Vector3 operator / (float s) const { return Vector3(x / s, y / s, z / s); }
+	inline const Vector3 operator + (const Vector3& v) const { return Vector3(x + v.x, y + v.y, z + v.z); }
+	inline const Vector3 operator - (const Vector3& v) const { return Vector3(x - v.x, y - v.y, z - v.z); }
+	inline const Vector3 operator * (float s) const { return Vector3(x * s, y * s, z * s); }
+	inline const Vector3 operator / (float s) const { return Vector3(x / s, y / s, z / s); }
 	friend const Vector3 operator * (float s, const Vector3& v);
 	bool operator == (const Vector3& v) const {
 		if(fabsf(x - v.x) >= EPSILON) return false;
@@ -74,8 +74,8 @@ public:
 		return l > r;
 	}
 	// operation's
-	float length() const { return sqrtf(x*x+y*y+z*z); }
-	float lengthSq() const { return  x*x+y*y+z*z; }
+	inline float length() const { return sqrtf(x*x+y*y+z*z); }
+	inline float lengthSq() const { return  x*x+y*y+z*z; }
 public:
 	union{
 		struct{

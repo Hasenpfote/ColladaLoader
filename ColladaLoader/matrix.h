@@ -46,8 +46,8 @@ public:
 			this->m[i] = m[i];
 	}
 	// casting
-	operator float* (){ return m; }
-	operator const float* () const { return m; }
+	inline operator float* (){ return m; }
+	inline operator const float* () const { return m; }
 	// assignment operator's
 	Matrix44& operator = (const Matrix44& m){ set(m); return *this; }
 	Matrix44& operator = (const float* m){ set(m); return *this; }
@@ -64,6 +64,8 @@ public:
 	bool operator == (const Matrix44& m) const;
 	bool operator != (const Matrix44& m) const;
 	// subscript operator's
+	inline float& operator [] (int i){ return m[i]; }
+	inline const float& operator [] (int i) const { return m[i]; }
 //	float* operator [] (int i){ return m2[i]; }
 //	const float* operator [] (int i) const { return m2[i]; }
 	inline float& operator()(int i, int j){
@@ -80,9 +82,8 @@ public:
 		return m[i*4+j];
 #endif
 	}
-
 	// operation's
-	inline float trace(){ return m00 + m11 + m22 + m33; }
+	inline float trace() const { return m00 + m11 + m22 + m33; }
 public:
 	union{
 		struct{
@@ -100,14 +101,14 @@ public:
 		};
 		float m[16];
 	};
-
+#ifdef _DEBUG
 	void dump() const {
 		printf("%.10f %.10f %.10f %.10f\n", m00, m01, m02, m03);
 		printf("%.10f %.10f %.10f %.10f\n", m10, m11, m12, m13);
 		printf("%.10f %.10f %.10f %.10f\n", m20, m21, m22, m23);
 		printf("%.10f %.10f %.10f %.10f\n", m30, m31, m32, m33);
 	}
-
+#endif
 };
 
 // operation's
@@ -123,5 +124,7 @@ Matrix44* Matrix44Translation(Matrix44* out, float x, float y, float z);
 Matrix44* Matrix44RotationX(Matrix44* out, float angle);
 Matrix44* Matrix44RotationY(Matrix44* out, float angle);
 Matrix44* Matrix44RotationZ(Matrix44* out, float angle);
+Matrix44* Matrix44FromQuaternion(Matrix44* out, const Quaternion* q);
+Quaternion* Matrix44ToQuaternion(Quaternion* out, const Matrix44* m);
 
 } // namespace mathematics
