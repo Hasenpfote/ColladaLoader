@@ -65,8 +65,7 @@ static bool init(void){
 	catch(std::bad_alloc& e){
 		return false;
 	}
-//	if(!model->load("model/miku/mikumiku.dae")){
-	if(!model->load("model/jessi1a/jessi1a.dae")){
+	if(!model->load("model/miku/mikumiku.dae")){
 		delete model;
 		model = NULL;
 		return false;

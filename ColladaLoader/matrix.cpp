@@ -353,4 +353,141 @@ Quaternion* Matrix44ToQuaternion(Quaternion* out, const Matrix44* m){
 	return out;
 }
 
+/**
+ * Ž‹‘Ì
+ * @param t top
+ * @param b bottom
+ * @param l left
+ * @param r right
+ * @param n near plane
+ * @param f far plane
+ */
+Matrix44* Matrix44Frustum(Matrix44* out, float t, float b, float l, float r, float n, float f){
+	// assert(t != b)
+	// assert(l != r)
+	// assert(n != f)
+	Matrix44Zero(out);
+	float*a = out->m;
+#ifdef RIGHT_HANDED_SYSTEM
+	// for OpenGL
+	const float w = 2.0f * n / (r - l);
+	const float h = 2.0f * n / (t - b);
+	const float q = 1.0f / (f - n);
+	const float woff = (r + l) / (r - l);
+	const float hoff = (t + b) / (t - b);
+
+	a[I(0,0)] = w;
+	a[I(1,1)] = h;
+	a[I(0,2)] = woff;
+	a[I(1,2)] = hoff;
+	a[I(2,2)] = -(f + n) * q; 
+	a[I(2,3)] = -2.0f * f * n * q;
+	a[I(3,2)] = -1.0f;
+#else
+	// for Direct3D
+	const float w = 2.0f * n / (r - l);
+	const float h = 2.0f * n / (t - b);
+	const float q = f / (f - n);
+	const float woff = -(r + l) / (r - l);
+	const float hoff = -(t + b) / (t - b);
+
+	a[I(0,0)] = w;
+	a[I(1,1)] = h;
+	a[I(2,0)] = woff;
+	a[I(2,1)] = hoff;
+	a[I(2,2)] = q;
+	a[I(2,3)] = 1.0f;
+	a[I(3,2)] = -n * q;
+#endif
+	return out;
+}
+
+/**
+ * ³ŽË‰e
+ * @param t top
+ * @param b bottom
+ * @param l left
+ * @param r right
+ * @param n near plane
+ * @param f far plane
+ */
+Matrix44* Matrix44Ortho(Matrix44* out, float t, float b, float l, float r, float n, float f){
+	// assert(t != b)
+	// assert(l != r)
+	// assert(n != f)
+	Matrix44Zero(out);
+	float*a = out->m;
+#ifdef RIGHT_HANDED_SYSTEM
+	// for OpenGL
+	const float w = 2.0f / (r - l);
+	const float h = 2.0f / (t - b);
+	const float q = 1.0f / (f - n);
+	const float woff = -(r + l) / (r - l);
+	const float hoff = -(t + b) / (t - b);
+
+	a[I(0,0)] = w;
+	a[I(1,1)] = h;
+	a[I(2,2)] = -2.0f * q;
+	a[I(0,3)] = woff;
+	a[I(1,3)] = hoff;
+	a[I(2,3)] = -(f + n) * q;
+	a[I(3,3)] = 1.0f;
+#else
+	// for Direct3D
+	const float w = 2.0f / (r - l);
+	const float h = 2.0f / (t - b);
+	const float q = 1.0f / (f - n);
+	const float woff = -(r + l) / (r - l);
+	const float hoff = -(t + b) / (t - b);
+
+	a[I(0,0)] = w;
+	a[I(1,1)] = h;
+	a[I(2,2)] = q;
+	a[I(3,0)] = woff;
+	a[I(3,1)] = hoff;
+	a[I(3,2)] = -n * q;
+	a[I(3,3)] = 1.0f;
+#endif
+	return out;
+}
+
+/**
+ * ŽË‰e
+ * @param fovy field of view
+ * @param aspect aspect ratio
+ * @param n near plane
+ * @param f far plane
+ */
+Matrix44* Matrix44Perspective(Matrix44* out, float fovy, float aspect, float n, float f){
+	// assert((fovy > 0.0f) && (fovy < 180.0f))
+	// assert(aspect > 0.0f)
+	// assert(n != f)
+	Matrix44Zero(out);
+	float*a = out->m;
+#ifdef RIGHT_HANDED_SYSTEM
+	// for OpenGL
+	const float hfovy = ToRadian(fovy * 0.5f);
+	const float cot = 1.0f / tanf(hfovy);
+	const float q = 1.0f / (f - n);
+
+	a[I(0,0)] = cot / aspect;
+	a[I(1,1)] = cot;
+	a[I(2,2)] = -(f + n) * q;
+	a[I(2,3)] = -2.0f * f * n * q;
+	a[I(3,2)] = -1.0f;
+#else
+	// for Direct3D
+	const float hfovy = ToRadian(fovy * 0.5f);
+	const float cot = 1.0f / tanf(hfovy);
+	const float q = f / (f - n);
+
+	a[I(0,0)] = cot / aspect;
+	a[I(1,1)] = cot;
+	a[I(2,2)] = q;
+	a[I(2,3)] = 1.0f;
+	a[I(3,2)] = -n * q;
+#endif
+	return out;
+}
+
 } // namespace mathematics 
