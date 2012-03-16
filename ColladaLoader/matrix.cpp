@@ -1,3 +1,4 @@
+#include "vector.h"
 #include "quaternion.h"
 #include "matrix.h"
 
@@ -351,6 +352,64 @@ Quaternion* Matrix44ToQuaternion(Quaternion* out, const Matrix44* m){
 		out->z = 0.25f / s;
 	}
 	return out;
+}
+
+Matrix44* Matrix44LookAt(Matrix44* out, class Vector3* position, const Vector3* target, const Vector3* up){
+	float*a = out->m;
+	Vector3 zaxis;
+#ifdef RIGHT_HANDED_SYSTEM
+	// for OpenGL
+	Vector3Sub(&zaxis, position, target);
+#else
+	// for Direct3D
+	Vector3Sub(&zaxis, target, position);
+#endif
+#ifdef _DEBUG
+	if(zaxis.length() < EPSILON){
+	}
+#endif
+	Vector3Normalize(&zaxis, &zaxis);
+
+	Vector3 yaxis;
+	Vector3Scale(&yaxis, &zaxis, Vector3InnerProduct(up, &zaxis));
+	Vector3Sub(&yaxis, up, &yaxis);
+	if(yaxis.length() < EPSILON){
+		Vector3 temp(0.0f, 1.0f, 0.0f);
+		Vector3Scale(&yaxis, &zaxis, zaxis.y);
+		Vector3Sub(&yaxis, &temp, &yaxis);
+		if(yaxis.length() < EPSILON){
+			temp.set(0.0f, 0.0f, 1.0f);
+			Vector3Scale(&yaxis, &zaxis, zaxis.z);
+			Vector3Sub(&yaxis, &temp, &yaxis);
+#ifdef _DEBUG
+			if(yaxis.length() < EPSILON){
+			}
+#endif
+		}
+	}
+	Vector3Normalize(&yaxis, &yaxis);
+
+	Vector3 xaxis;
+	Vector3OuterProduct(&xaxis, &yaxis, &zaxis);
+
+#ifdef COLUMN_MAJOR
+	a[I(0,0)] = xaxis.x; a[I(0,1)] = xaxis.y; a[I(0,2)] = xaxis.z; a[I(0,3)] = -Vector3InnerProduct(&xaxis, position); 
+	a[I(1,0)] = yaxis.x; a[I(1,1)] = yaxis.y; a[I(1,2)] = yaxis.z; a[I(1,3)] = -Vector3InnerProduct(&yaxis, position);
+	a[I(2,0)] = zaxis.x; a[I(2,1)] = zaxis.y; a[I(2,2)] = zaxis.z; a[I(2,3)] = -Vector3InnerProduct(&zaxis, position);
+	a[I(3,0)] = 0.0f;
+	a[I(3,1)] = 0.0f;
+	a[I(3,2)] = 0.0f;
+	a[I(3,3)] = 1.0f;
+#else
+	a[I(0,0)] = xaxis.x; a[I(0,1)] = yaxis.x; a[I(0,2)] = zaxis.x; a[I(0,3)] = 0.0f;
+	a[I(1,0)] = xaxis.y; a[I(1,1)] = yaxis.y; a[I(1,2)] = zaxis.y; a[I(1,3)] = 0.0f;
+	a[I(2,0)] = xaxis.z; a[I(2,1)] = yaxis.z; a[I(2,2)] = zaxis.z; a[I(2,3)] = 0.0f;
+	a[I(3,0)] = -Vector3InnerProduct(&xaxis, position);
+	a[I(3,1)] = -Vector3InnerProduct(&yaxis, position);
+	a[I(3,2)] = -Vector3InnerProduct(&zaxis, position);
+	a[I(3,3)] = 1.0f;
+#endif
+	return NULL;
 }
 
 /**

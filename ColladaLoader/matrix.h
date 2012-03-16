@@ -126,6 +126,7 @@ Matrix44* Matrix44RotationY(Matrix44* out, float angle);
 Matrix44* Matrix44RotationZ(Matrix44* out, float angle);
 Matrix44* Matrix44FromQuaternion(Matrix44* out, const Quaternion* q);
 Quaternion* Matrix44ToQuaternion(Quaternion* out, const Matrix44* m);
+Matrix44* Matrix44LookAt(Matrix44* out, class Vector3* position, const Vector3* target, const Vector3* up);
 Matrix44* Matrix44Frustum(Matrix44* out, float t, float b, float l, float r, float n, float f);
 Matrix44* Matrix44Ortho(Matrix44* out, float t, float b, float l, float r, float n, float f);
 Matrix44* Matrix44Perspective(Matrix44* out, float fovy, float aspect, float n, float f);
