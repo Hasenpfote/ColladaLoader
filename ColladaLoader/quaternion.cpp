@@ -70,13 +70,10 @@ Quaternion* QuaternionConjugate(Quaternion* out, const Quaternion* q){
  * ”CˆÓŽ²‰ñ“]
  * @param out o—Í
  * @param axis ‰ñ“]Ž²
- * @param angle Šp“x
+ * @param angle Šp“x(‰ñ“]•ûŒü‚ÍŽ²•ûŒü‚ÉŒ©‚Ä”½ŽžŒvŽü‚è‚È‚Ì‚ÅOpenGL‚Å‚Í‹t‰ñ“]‚Æ‚È‚é)
  * q = (s, v) = {cos(ƒÆ/2), axis*sin(ƒÆ/2)}
  */
 Quaternion* QuaternionRotation(Quaternion* out, const Vector3* axis, float angle){
-#ifdef RIGHT_HANDED_SYSTEM
-	angle = -angle;
-#endif
 	const float r = ToRadian(angle) * 0.5f;
 	const float s = sinf(r);
 	out->w = cosf(r);
