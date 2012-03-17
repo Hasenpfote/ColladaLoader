@@ -1,4 +1,5 @@
 #include "vector.h"
+#include "log.h"
 
 namespace mathematics{
 
@@ -45,6 +46,8 @@ Vector3* Vector3Normalize(Vector3* out, const Vector3* v){
 	float s = v->x*v->x+v->y*v->y+v->z*v->z;
 #ifdef _DEBUG
 	if(s < EPSILON){
+		Log_w("avoided divide by zero\n");
+		return out;
 	}
 #endif
 	return Vector3Scale(out, v, 1.0f/sqrtf(s));

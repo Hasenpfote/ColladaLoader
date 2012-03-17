@@ -1,5 +1,6 @@
 #include "vector.h"
 #include "quaternion.h"
+#include "log.h"
 
 namespace mathematics{
 
@@ -110,6 +111,8 @@ Quaternion* QuaternionNormalize(Quaternion* out, const Quaternion* q){
 	const float n = q->norm();
 #ifdef _DEBUG
 	if(n < EPSILON){
+		Log_w("avoided divide by zero\n");
+		return out;
 	}
 #endif
 	return QuaternionScale(out, out, 1.0f/n);

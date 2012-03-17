@@ -274,6 +274,73 @@ Matrix44* Matrix44RotationZ(Matrix44* out, float angle){
 }
 
 /**
+ * ”CˆÓŽ²‰ñ“]
+ * @param axis ‰ñ“]Ž²
+ * @param angle Šp“x
+ * (1-cosƒÆ)Žü•Ó‚Ì“WŠJ•û–@‚ð•Ï‚¦‚é‚ÆæŽZ‰ñ”‚ªŒ¸‚é(–¢‘Î‰ž)
+ */
+Matrix44* Matrix44RotationAxis(Matrix44* out, const Vector3* axis, float angle){
+	const float x = axis->x;
+	const float y = axis->y;
+	const float z = axis->z;
+	const float xy = x * y;
+	const float xz = x * z;
+	const float yz = y * z;
+	angle = ToRadian(angle);
+	const float c = cosf(angle);
+	const float s = sinf(angle);
+	const float omc = 1.0f - c;
+	const float xs = x * s;
+	const float ys = y * s;
+	const float zs = z * s;
+
+	float* a = out->m;
+#ifdef RIGHT_HANDED_SYSTEM
+	// x^2(1-cosƒÆ)+cosƒÆ,	xy(1-cosƒÆ)-zsinƒÆ,	xz(1-cosƒÆ)+ysinƒÆ
+	// xy(1-cosƒÆ)+zsinƒÆ,	y^2(1-cosƒÆ)+cosƒÆ,	yz(1-cosƒÆ)-xsinƒÆ
+	// xz(1-cosƒÆ)-ysinƒÆ,	yz(1-cosƒÆ)+xsinƒÆ,	z^2(1-cosƒÆ)+cosƒÆ
+	a[I(0,0)] = x * x * omc + c;
+	a[I(1,0)] = xy * omc + zs;
+	a[I(2,0)] = xz * omc - ys;
+	a[I(3,0)] = 0.0f;
+
+	a[I(0,1)] = xy * omc - zs;
+	a[I(1,1)] = y * y * omc + c;
+	a[I(2,1)] = yz * omc + xs;
+	a[I(3,1)] = 0.0f;
+
+	a[I(0,2)] = xz * omc + ys;
+	a[I(1,2)] = yz * omc - xs;
+	a[I(2,2)] = z * z * omc + c;
+	a[I(3,2)] = 0.0f;
+#else
+	// x^2(1-cosƒÆ)+cosƒÆ,	xy(1-cosƒÆ)+zsinƒÆ,	xz(1-cosƒÆ)-ysinƒÆ
+	// xy(1-cosƒÆ)-zsinƒÆ,	y^2(1-cosƒÆ)+cosƒÆ,	yz(1-cosƒÆ)+xsinƒÆ
+	// xz(1-cosƒÆ)+ysinƒÆ,	yz(1-cosƒÆ)-xsinƒÆ,	z^2(1-cosƒÆ)+cosƒÆ
+	a[I(0,0)] = x * x * omc + c;
+	a[I(1,0)] = xy * omc - zs;
+	a[I(2,0)] = xz * omc + ys;
+	a[I(3,0)] = 0.0f;
+
+	a[I(0,1)] = xy * omc + zs;
+	a[I(1,1)] = y * y * omc + c;
+	a[I(2,1)] = yz * omc - xs;
+	a[I(3,1)] = 0.0f;
+
+	a[I(0,2)] = xz * omc - ys;
+	a[I(1,2)] = yz * omc + xs;
+	a[I(2,2)] = z * z * omc + c;
+	a[I(3,2)] = 0.0f;
+#endif
+	a[I(0,3)] = 
+	a[I(1,3)] = 
+	a[I(2,3)] = 0.0f;
+	a[I(3,3)] = 1.0f;
+
+	return out;
+}
+
+/**
  * ƒNƒH[ƒ^ƒjƒIƒ“‚©‚çs—ñ‚Ö
  * ‘ÎŠp¬•ª‚Í’¼ÚƒAƒNƒZƒX‚Å‚¢‚¢‚©‚à
  */
@@ -414,12 +481,12 @@ Matrix44* Matrix44LookAt(Matrix44* out, class Vector3* position, const Vector3* 
 
 /**
  * Ž‹‘Ì
- * @param t top
- * @param b bottom
- * @param l left
- * @param r right
- * @param n near plane
- * @param f far plane
+ * @param t top of view volume at the near clipping plane
+ * @param b bottom of view volume at the near clipping plane
+ * @param l left of view volume at the near clipping plane
+ * @param r right of view volume at the near clipping plane
+ * @param n positive distance from camera to near clipping plane
+ * @param f positive distance from camera to far clipping plane
  */
 Matrix44* Matrix44Frustum(Matrix44* out, float t, float b, float l, float r, float n, float f){
 	// assert(t != b)
@@ -463,12 +530,12 @@ Matrix44* Matrix44Frustum(Matrix44* out, float t, float b, float l, float r, flo
 
 /**
  * ³ŽË‰e
- * @param t top
- * @param b bottom
- * @param l left
- * @param r right
- * @param n near plane
- * @param f far plane
+ * @param t top of parallel view volume
+ * @param b bottom of parallel view volume
+ * @param l left of parallel view volume
+ * @param r right of parallel view volume
+ * @param n positive distance from camera to near clipping plane
+ * @param f positive distance from camera to far clipping plane
  */
 Matrix44* Matrix44Ortho(Matrix44* out, float t, float b, float l, float r, float n, float f){
 	// assert(t != b)
@@ -512,10 +579,10 @@ Matrix44* Matrix44Ortho(Matrix44* out, float t, float b, float l, float r, float
 
 /**
  * ŽË‰e
- * @param fovy field of view
- * @param aspect aspect ratio
- * @param n near plane
- * @param f far plane
+ * @param fovy total field of view in the YZ plane
+ * @param aspect aspect ration of view window width:height (X / Y)
+ * @param n positive distance from camera to near clipping plane
+ * @param f positive distance from camera to far clipping plane
  */
 Matrix44* Matrix44Perspective(Matrix44* out, float fovy, float aspect, float n, float f){
 	// assert((fovy > 0.0f) && (fovy < 180.0f))

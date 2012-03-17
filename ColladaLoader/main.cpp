@@ -124,12 +124,8 @@ void release(){
 static void display(void){
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
-//	gluLookAt(0.0, 0.0, cam_pos_z, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
-#if 1
-	Matrix44 view;
-	Matrix44LookAt(&view, &Vector3(0.0f, 0.0f, cam_pos_z), &Vector3(0.0f, 0.0f, 0.0f), &Vector3(0.0f, 1.0f, 0.0f));
-	glLoadMatrixf(view);
-#endif
+	gluLookAt(0.0, 0.0, cam_pos_z, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+
 	mathematics::Matrix44 matR(qc);
 	glMultMatrixf(matR);
 
@@ -269,6 +265,13 @@ void MouseWheel(int wheel_number, int direction, int x, int y){
  * エントリ
  */
 int main(int argc, char *argv[]){
+
+//	Matrix44 matR;
+//	Matrix44RotationAxis(&matR, &Vector3(0.0f, 0.0f, 1.0f), 90.0f);
+//	matR.dump();
+//	return 1;
+
+
 	// initialize GLUT
 	glutInitWindowPosition(0, 0);
 	glutInitWindowSize(640, 480);
