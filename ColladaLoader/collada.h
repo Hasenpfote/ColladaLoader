@@ -5,20 +5,10 @@
 #include "collada_def.h"
 #include "collada_util.h"
 #include "collada_geometry.h"
+#include "matrix.h"
+#include "vector.h"
 
 namespace collada{
-
-typedef struct tagTransformationElement{
-	TransformationElementType type;
-	union{
-		float lookat[9];
-		float matrix[16];
-		float rotate[4];
-		float scale[3];
-		float skew[7];
-		float translate[3];
-	};
-}TransformationElement;
 
 class Node{
 friend class NodeBank;
@@ -33,16 +23,18 @@ public:
 	void addChild(Node* child);
 	void addNext(Node* child);
 	void update(bool flag = true);
+	void updateMatrix(const mathematics::Matrix44* parent, bool flag = true);
 	GeometryPtrArray& getGeometries(){ return geometries; }
 	const GeometryPtrArray& getGeometries() const { return geometries; }
+	const mathematics::Matrix44* getCurrentMatrix() const { return &current; }
 private:
 	bool load(const daeElementRefArray&);
-	void load(TransformationElement*, const domLookat*);
-	void load(TransformationElement*, const domMatrix*);
-	void load(TransformationElement*, const domRotate*);
-	void load(TransformationElement*, const domScale*);
-	void load(TransformationElement*, const domSkew*);
-	void load(TransformationElement*, const domTranslate*);
+	void load(float*, const domLookat*);
+	void load(float*, const domMatrix*);
+	void load(float*, const domRotate*);
+	void load(float*, const domScale*);
+	void load(float*, const domSkew*);
+	void load(float*, const domTranslate*);
 #ifdef DEBUG
 public:
 	std::string name;	// for debug
@@ -52,8 +44,9 @@ private:
 	Node* child;
 	Node* next;
 	unsigned int uid;
-	TransformationPtrArray trans_elems;
 	GeometryPtrArray geometries;
+	mathematics::Matrix44 local_to_world;
+	mathematics::Matrix44 current;
 };
 
 class NodeBank{

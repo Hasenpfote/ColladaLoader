@@ -65,7 +65,8 @@ static bool init(void){
 	catch(std::bad_alloc& e){
 		return false;
 	}
-	if(!model->load("model/miku/mikumiku.dae")){
+	if(!model->load("model/negimiku/negimiku.dae")){
+//	if(!model->load("model/miku/mikumiku.dae")){
 		delete model;
 		model = NULL;
 		return false;
@@ -73,7 +74,8 @@ static bool init(void){
 #ifdef USE_SHADER
 	if(!glsl0.create("shader/simple.vert", "shader/mqo.frag"))
 		return false;
-	if(!glsl1.create("shader/simple.vert", "shader/mqo_tex.frag"))
+//	if(!glsl1.create("shader/simple.vert", "shader/mqo_tex.frag"))
+	if(!glsl1.create("shader/simple.vert", "shader/output_texture.frag"))
 		return false;
 #endif
 	const collada::Images* images = model->getImages();
@@ -126,16 +128,24 @@ static void display(void){
 	glLoadIdentity();
 	gluLookAt(0.0, 0.0, cam_pos_z, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
 	mathematics::Matrix44 matR(qc);
-	glMultMatrixf(matR);
+//	glMultMatrixf(matR);
 
 	const collada::Scene* scene = model->getScene();
 	const collada::Node* node = scene->findNode();
+	if(node != NULL){
+		const_cast<collada::Node*>(node)->updateMatrix(&matR);
+	}
+
 	while(node != NULL){
+		glPushMatrix();
+		glMultMatrixf(*(node->getCurrentMatrix()));
+
 		const collada::GeometryPtrArray& geoms = node->getGeometries();
 		for(size_t i = 0; i < geoms.size(); i++){
 			const collada::Mesh* mesh = geoms[i]->getMesh();
 			if(mesh == NULL)
 				continue;
+
 			std::map<unsigned int, collada::Material*>& bind_material = geoms[i]->getBindMaterial();
 			const collada::TrianglesPtrArray* triangles = mesh->getTriangles();
 			for(size_t j = 0; j < triangles->size(); j++){
@@ -191,6 +201,7 @@ static void display(void){
 			}
 		}
 		node = node->getNext();
+		glPopMatrix();
 	}
 //	glPopMatrix();
 #ifdef USE_SHADER

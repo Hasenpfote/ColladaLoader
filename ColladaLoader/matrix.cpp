@@ -228,6 +228,15 @@ Matrix44* Matrix44Translation(Matrix44* out, float x, float y, float z){
 	return out;
 }
 
+Matrix44* Matrix44Scaling(Matrix44* out, float x, float y, float z){
+	Matrix44Identity(out);
+	float* a = out->m;
+	a[0] = x;
+	a[5] = y;
+	a[10] = z;
+	return out;
+}
+
 Matrix44* Matrix44RotationX(Matrix44* out, float angle){
 	Matrix44Identity(out);
 	const float theta = ToRadian(angle);

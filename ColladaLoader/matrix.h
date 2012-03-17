@@ -4,6 +4,7 @@
 
 namespace mathematics{
 
+class Vector3;
 class Quaternion;
 
 class Matrix44{
@@ -121,6 +122,7 @@ Matrix44* Matrix44Scale(Matrix44* out, const Matrix44* m, float s);
 Matrix44* Matrix44Transpose(Matrix44* out, const Matrix44* m);
 Matrix44* Matrix44Inverse(Matrix44* out, const Matrix44* m);
 Matrix44* Matrix44Translation(Matrix44* out, float x, float y, float z);
+Matrix44* Matrix44Scaling(Matrix44* out, float x, float y, float z);
 Matrix44* Matrix44RotationX(Matrix44* out, float angle);
 Matrix44* Matrix44RotationY(Matrix44* out, float angle);
 Matrix44* Matrix44RotationZ(Matrix44* out, float angle);

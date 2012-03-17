@@ -47,11 +47,6 @@ Node::~Node(){
 }
 
 void Node::cleanup(){
-	for(TransformationPtrArray::iterator it = trans_elems.begin(); it != trans_elems.end(); it++){
-		delete (*it);
-		(*it) = NULL;
-	}
-	trans_elems.clear();
 	for(GeometryPtrArray::iterator it = geometries.begin(); it != geometries.end(); it++){
 		delete (*it);
 		(*it) = NULL;
@@ -60,42 +55,50 @@ void Node::cleanup(){
 }
 
 bool Node::load(const daeElementRefArray& dae_elem_ref_array){
+	// 列ベクトルかつ出現順序で乗算
+	mathematics::Matrix44Identity(&local_to_world);
+	mathematics::Matrix44 current;
+	mathematics::Vector3 v;
+	float values[16];
+
 	size_t cont_count = dae_elem_ref_array.getCount();
 	for(size_t i = 0; i < cont_count; i++){
 		daeElement* dae_elem = dae_elem_ref_array.get(i);
 		TransformationElementType type = getTransformationType(dae_elem);
 		if(!isTransformationElement(type))
 			continue;
-		TransformationElement* trans_elem;
-		try{
-			trans_elem = new TransformationElement;
-		}
-		catch(std::bad_alloc& e){
-			Log_e("could not allocate memory.\n");
-			cleanup();
-			return false;
-		}
-		trans_elem->type = type;
-		trans_elems.push_back(trans_elem);
-
 		switch(type){
 		case TransformationElement_Lookat:
-			load(trans_elem, dynamic_cast<domLookat*>(dae_elem));
+			load(values, dynamic_cast<domLookat*>(dae_elem));
+			Log_w("unsupported\n");
 			break;
-		case TransformationElement_Matrix:
-			load(trans_elem, dynamic_cast<domMatrix*>(dae_elem));
+		case TransformationElement_Matrix:// 入力は行指向
+			load(values, dynamic_cast<domMatrix*>(dae_elem));
+			current.set(values[0], values[1], values[2], values[3],
+						values[4], values[5], values[6], values[7],
+						values[8], values[9], values[10], values[11],
+						values[12], values[13], values[14], values[15]);
+			mathematics::Matrix44Mul(&local_to_world, &current, &local_to_world);
 			break;
 		case TransformationElement_Rotate:
-			load(trans_elem, dynamic_cast<domRotate*>(dae_elem));
+			load(values, dynamic_cast<domRotate*>(dae_elem));
+			v.set(values[0], values[1], values[2]);
+			mathematics::Matrix44RotationAxis(&current, &v, values[3]);
+			mathematics::Matrix44Mul(&local_to_world, &current, &local_to_world);
 			break;
 		case TransformationElement_Scale:
-			load(trans_elem, dynamic_cast<domScale*>(dae_elem));
+			load(values, dynamic_cast<domScale*>(dae_elem));
+			Matrix44Scaling(&current, values[0], values[1], values[2]);
+			mathematics::Matrix44Mul(&local_to_world, &current, &local_to_world);
 			break;
 		case TransformationElement_Skew:
-			load(trans_elem, dynamic_cast<domSkew*>(dae_elem));
+			load(values, dynamic_cast<domSkew*>(dae_elem));
+			Log_w("unsupported\n");
 			break;
 		case TransformationElement_Translate:
-			load(trans_elem, dynamic_cast<domTranslate*>(dae_elem));
+			load(values, dynamic_cast<domTranslate*>(dae_elem));
+			Matrix44Translation(&current, values[0], values[1], values[2]);
+			mathematics::Matrix44Mul(&local_to_world, &current, &local_to_world);
 			break;
 		default:
 			break;
@@ -103,40 +106,40 @@ bool Node::load(const daeElementRefArray& dae_elem_ref_array){
 	}
 	return true;
 }
-void Node::load(TransformationElement* tarns_elem, const domLookat* dom_lookat){
+void Node::load(float* values, const domLookat* dom_lookat){
 	size_t count = dom_lookat->getValue().getCount();
 	for(size_t i = 0; i < count; i++)
-		tarns_elem->lookat[i] = dom_lookat->getValue().get(i);
+		values[i] = dom_lookat->getValue().get(i);
 }
 
-void Node::load(TransformationElement* tarns_elem, const domMatrix* dom_matrix){
+void Node::load(float* values, const domMatrix* dom_matrix){
 	size_t count = dom_matrix->getValue().getCount();
 	for(size_t i = 0; i < count; i++)
-		tarns_elem->matrix[i] = dom_matrix->getValue().get(i);
+		values[i] = dom_matrix->getValue().get(i);
 }
 
-void Node::load(TransformationElement* tarns_elem, const domRotate* dom_rotate){
+void Node::load(float* values, const domRotate* dom_rotate){
 	size_t count = dom_rotate->getValue().getCount();
 	for(size_t i = 0; i < count; i++)
-		tarns_elem->rotate[i] = dom_rotate->getValue().get(i);
+		values[i] = dom_rotate->getValue().get(i);
 }
 
-void Node::load(TransformationElement* tarns_elem, const domScale* dom_scale){
+void Node::load(float* values, const domScale* dom_scale){
 	size_t count = dom_scale->getValue().getCount();
 	for(size_t i = 0; i < count; i++)
-		tarns_elem->scale[i] = dom_scale->getValue().get(i);
+		values[i] = dom_scale->getValue().get(i);
 }
 
-void Node::load(TransformationElement* tarns_elem, const domSkew* dom_skew){
+void Node::load(float* values, const domSkew* dom_skew){
 	size_t count = dom_skew->getValue().getCount();
 	for(size_t i = 0; i < count; i++)
-		tarns_elem->skew[i] = dom_skew->getValue().get(i);
+		values[i] = dom_skew->getValue().get(i);
 }
 
-void Node::load(TransformationElement* tarns_elem, const domTranslate* dom_trans){
+void Node::load(float* values, const domTranslate* dom_trans){
 	size_t count = dom_trans->getValue().getCount();
 	for(size_t i = 0; i < count; i++)
-		tarns_elem->translate[i] = dom_trans->getValue().get(i);
+		values[i] = dom_trans->getValue().get(i);
 }
 
 bool Node::load(domNode* dom_node){
@@ -207,6 +210,21 @@ void Node::update(bool flag){	// ToDo:引数は親の行列などを後ほど追
 		Node* node = sibling;
 		do{
 			node->update(false);
+			node = node->sibling;
+		}while(node);
+	}
+}
+
+void Node::updateMatrix(const mathematics::Matrix44* parent, bool flag){
+	mathematics::Matrix44Mul(&current, parent, &local_to_world);
+	// 子供の更新
+	if(child)
+		child->updateMatrix(&current, true);
+	// 兄弟の更新
+	if(flag && sibling){
+		Node* node = sibling;
+		do{
+			node->updateMatrix(parent, false);
 			node = node->sibling;
 		}while(node);
 	}
