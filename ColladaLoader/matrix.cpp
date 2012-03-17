@@ -233,7 +233,7 @@ Matrix44* Matrix44RotationX(Matrix44* out, float angle){
 	const float theta = ToRadian(angle);
 	const float s = sinf(theta);
 	const float c = cosf(theta);
-#ifdef COLUMN_MAJOR
+#ifdef RIGHT_HANDED_SYSTEM
 	out->m11 = c; out->m12 =-s;
 	out->m21 = s; out->m22 = c;
 #else
@@ -248,7 +248,7 @@ Matrix44* Matrix44RotationY(Matrix44* out, float angle){
 	const float theta = ToRadian(angle);
 	const float s = sinf(theta);
 	const float c = cosf(theta);
-#ifdef COLUMN_MAJOR
+#ifdef RIGHT_HANDED_SYSTEM
 	out->m00 = c; out->m02 = s;
 	out->m20 =-s; out->m22 = c;
 #else
@@ -263,7 +263,7 @@ Matrix44* Matrix44RotationZ(Matrix44* out, float angle){
 	const float theta = ToRadian(angle);
 	const float s = sinf(theta);
 	const float c = cosf(theta);
-#ifdef COLUMN_MAJOR
+#ifdef RIGHT_HANDED_SYSTEM
 	out->m00 = c; out->m01 =-s;
 	out->m10 = s; out->m11 = c;
 #else
