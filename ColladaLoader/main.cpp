@@ -65,8 +65,9 @@ static bool init(void){
 	catch(std::bad_alloc& e){
 		return false;
 	}
-	if(!model->load("model/negimiku/negimiku.dae")){
-//	if(!model->load("model/miku/mikumiku.dae")){
+//	if(!model->load("model/negimiku/negimiku.dae")){
+//	if(!model->load("model/miku/miku_v2.dae")){
+	if(!model->load("model/miku/mikumiku.dae")){
 		delete model;
 		model = NULL;
 		return false;
@@ -275,13 +276,6 @@ void MouseWheel(int wheel_number, int direction, int x, int y){
  * エントリ
  */
 int main(int argc, char *argv[]){
-
-//	Matrix44 matR;
-//	Matrix44RotationAxis(&matR, &Vector3(0.0f, 0.0f, 1.0f), 90.0f);
-//	matR.dump();
-//	return 1;
-
-
 	// initialize GLUT
 	glutInitWindowPosition(0, 0);
 	glutInitWindowSize(640, 480);

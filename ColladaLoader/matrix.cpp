@@ -1,6 +1,7 @@
 #include "vector.h"
 #include "quaternion.h"
 #include "matrix.h"
+#include "log.h"
 
 namespace mathematics{
 
@@ -182,7 +183,7 @@ Matrix44* Matrix44Transpose(Matrix44* out, const Matrix44* m){
 }
 
 /**
- * ŠÈˆÕ
+ * ‹ts—ñ(³‹K’¼sŠî’ê‚©‚ç‚È‚és—ñ—p)
  */
 Matrix44* Matrix44Inverse(Matrix44* out, const Matrix44* m){
 	Matrix44 temp;
@@ -211,6 +212,75 @@ Matrix44* Matrix44Inverse(Matrix44* out, const Matrix44* m){
 	// overwrite matrix if needed
 	if(p == &temp)
 		*out = temp;
+	return out;
+}
+
+/**
+ * ‹ts—ñ
+ * @param determinant s—ñŽ®
+ */
+Matrix44* Matrix44Inverse(Matrix44* out, float* determinant, const Matrix44* m){
+	const float* ma = m->m;
+	const float a00a11 = ma[I(0,0)] * ma[I(1,1)];
+	const float a22a33 = ma[I(2,2)] * ma[I(3,3)];
+	const float a00a12 = ma[I(0,0)] * ma[I(1,2)];
+	const float a23a31 = ma[I(2,3)] * ma[I(3,1)];
+	const float a00a13 = ma[I(0,0)] * ma[I(1,3)];
+	const float a21a32 = ma[I(2,1)] * ma[I(3,2)];
+	const float a01a10 = ma[I(0,1)] * ma[I(1,0)];
+	const float a23a32 = ma[I(2,3)] * ma[I(3,2)];
+	const float a01a12 = ma[I(0,1)] * ma[I(1,2)];
+	const float a20a33 = ma[I(2,0)] * ma[I(3,3)];
+	const float a01a13 = ma[I(0,1)] * ma[I(1,3)];
+	const float a22a30 = ma[I(2,2)] * ma[I(3,0)];
+	const float a02a10 = ma[I(0,2)] * ma[I(1,0)];
+	const float a21a33 = ma[I(2,1)] * ma[I(3,3)];
+	const float a02a11 = ma[I(0,2)] * ma[I(1,1)];
+	const float a23a30 = ma[I(2,3)] * ma[I(3,0)];
+	const float a02a13 = ma[I(0,2)] * ma[I(1,3)];
+	const float a20a31 = ma[I(2,0)] * ma[I(3,1)];
+	const float a03a10 = ma[I(0,3)] * ma[I(1,0)];
+	const float a22a31 = ma[I(2,2)] * ma[I(3,1)];
+	const float a03a11 = ma[I(0,3)] * ma[I(1,1)];
+	const float a20a32 = ma[I(2,0)] * ma[I(3,2)];
+	const float a03a12 = ma[I(0,3)] * ma[I(1,2)];
+	const float a21a30 = ma[I(2,1)] * ma[I(3,0)];
+
+	float det = a00a11 * a22a33 + a00a12 * a23a31 + a00a13 * a21a32 + a01a10 * a23a32
+			  + a01a12 * a20a33 + a01a13 * a22a30 + a02a10 * a21a33 + a02a11 * a23a30
+			  + a02a13 * a20a31 + a03a10 * a22a31 + a03a11 * a20a32 + a03a12 * a21a30
+			  - a00a11 * a23a32 - a00a12 * a21a33 - a00a13 * a22a31 - a01a10 * a22a33
+			  - a01a12 * a23a30 - a01a13 * a20a32 - a02a10 * a23a31 - a02a11 * a20a33
+			  - a02a13 * a21a30 - a03a10 * a21a32 - a03a11 * a22a30 - a03a12 * a20a31;
+	*determinant = det;
+	if(fabsf(det) < EPSILON){
+#ifdef _DEBUG
+		Log_w("the matrix does not have an inverse.");
+#endif
+		return out;
+	}
+	float* a = out->m;
+
+	a[I(0,0)] = ma[I(1,1)] * a22a33 + ma[I(1,2)] * a23a31 + ma[I(1,3)] * a21a32 - ma[I(1,1)] * a23a32 - ma[I(1,2)] * a21a33 - ma[I(1,3)] * a22a31;
+	a[I(0,1)] = ma[I(0,1)] * a23a32 + ma[I(0,2)] * a21a33 + ma[I(0,3)] * a22a31 - ma[I(0,1)] * a22a33 - ma[I(0,2)] * a23a31 - ma[I(0,3)] * a21a32;
+	a[I(0,2)] = a01a12 * ma[I(3,3)] + a02a13 * ma[I(3,1)] + a03a11 * ma[I(3,2)] - a01a13 * ma[I(3,2)] - a02a11 * ma[I(3,3)] - a03a12 * ma[I(3,1)];
+	a[I(0,3)] = a01a13 * ma[I(2,2)] + a02a11 * ma[I(2,3)] + a03a12 * ma[I(2,1)] - a01a12 * ma[I(2,3)] - a02a13 * ma[I(2,1)] - a03a11 * ma[I(2,2)];
+
+	a[I(1,0)] = ma[I(1,0)] * a23a32 + ma[I(1,2)] * a20a33 + ma[I(1,3)] * a22a30 - ma[I(1,0)] * a22a33 - ma[I(1,2)] * a23a30 - ma[I(1,3)] * a20a32;
+	a[I(1,1)] = ma[I(0,0)] * a22a33 + ma[I(0,2)] * a23a30 + ma[I(0,3)] * a20a32 - ma[I(0,0)] * a23a32 - ma[I(0,2)] * a20a33 - ma[I(0,3)] * a22a30;
+	a[I(1,2)] = a00a13 * ma[I(3,2)] + a02a10 * ma[I(3,3)] + a03a12 * ma[I(3,0)] - a00a12 * ma[I(3,3)] - a02a13 * ma[I(3,0)] - a03a10 * ma[I(3,2)];
+	a[I(1,3)] = a00a12 * ma[I(2,3)] + a02a13 * ma[I(2,0)] + a03a10 * ma[I(2,2)] - a00a13 * ma[I(2,2)] - a02a10 * ma[I(2,3)] - a03a12 * ma[I(2,0)];
+
+	a[I(2,0)] = ma[I(1,0)] * a21a33 + ma[I(1,1)] * a23a30 + ma[I(1,3)] * a20a31 - ma[I(1,0)] * a23a31 - ma[I(1,1)] * a20a33 - ma[I(1,3)] * a21a30;
+	a[I(2,1)] = ma[I(0,0)] * a23a31 + ma[I(0,1)] * a20a33 + ma[I(0,3)] * a21a30 - ma[I(0,0)] * a21a33 - ma[I(0,1)] * a23a30 - ma[I(0,3)] * a20a31;
+	a[I(2,2)] = a00a11 * ma[I(3,3)] + a01a13 * ma[I(3,0)] + a03a10 * ma[I(3,1)] - a00a13 * ma[I(3,1)] - a01a10 * ma[I(3,3)] - a03a11 * ma[I(3,0)];
+	a[I(2,3)] = a00a13 * ma[I(2,1)] + a01a10 * ma[I(2,3)] + a03a11 * ma[I(2,0)] - a00a11 * ma[I(2,3)] - a01a13 * ma[I(2,0)] - a03a10 * ma[I(2,1)];
+
+	a[I(3,0)] = ma[I(1,0)] * a22a31 + ma[I(1,1)] * a20a32 + ma[I(1,2)] * a21a30 - ma[I(1,0)] * a21a32 - ma[I(1,1)] * a22a30 - ma[I(1,2)] * a20a31;
+	a[I(3,1)] = ma[I(0,0)] * a21a32 + ma[I(0,1)] * a22a30 + ma[I(0,2)] * a20a31 - ma[I(0,0)] * a22a31 - ma[I(0,1)] * a20a32 - ma[I(0,2)] * a21a30;
+	a[I(3,2)] = a00a12 * ma[I(3,1)] + a01a10 * ma[I(3,2)] + a02a11 * ma[I(3,0)] - a00a11 * ma[I(3,2)] - a01a12 * ma[I(3,0)] - a02a10 * ma[I(3,1)];
+	a[I(3,3)] = a00a11 * ma[I(2,2)] + a01a12 * ma[I(2,0)] + a02a10 * ma[I(2,1)] - a00a12 * ma[I(2,1)] - a01a10 * ma[I(2,2)] - a02a11 * ma[I(2,0)];
+
 	return out;
 }
 

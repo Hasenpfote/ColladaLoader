@@ -104,10 +104,10 @@ public:
 	};
 #ifdef _DEBUG
 	void dump() const {
-		printf("%.10f %.10f %.10f %.10f\n", m00, m01, m02, m03);
-		printf("%.10f %.10f %.10f %.10f\n", m10, m11, m12, m13);
-		printf("%.10f %.10f %.10f %.10f\n", m20, m21, m22, m23);
-		printf("%.10f %.10f %.10f %.10f\n", m30, m31, m32, m33);
+		printf("%.5f %.5f %.5f %.5f\n", m00, m01, m02, m03);
+		printf("%.5f %.5f %.5f %.5f\n", m10, m11, m12, m13);
+		printf("%.5f %.5f %.5f %.5f\n", m20, m21, m22, m23);
+		printf("%.5f %.5f %.5f %.5f\n", m30, m31, m32, m33);
 	}
 #endif
 };
@@ -121,6 +121,7 @@ Matrix44* Matrix44Mul(Matrix44* out, const Matrix44* m1, const Matrix44* m2);
 Matrix44* Matrix44Scale(Matrix44* out, const Matrix44* m, float s);
 Matrix44* Matrix44Transpose(Matrix44* out, const Matrix44* m);
 Matrix44* Matrix44Inverse(Matrix44* out, const Matrix44* m);
+Matrix44* Matrix44Inverse(Matrix44* out, float* determinant, const Matrix44* m);
 Matrix44* Matrix44Translation(Matrix44* out, float x, float y, float z);
 Matrix44* Matrix44Scaling(Matrix44* out, float x, float y, float z);
 Matrix44* Matrix44RotationX(Matrix44* out, float angle);
