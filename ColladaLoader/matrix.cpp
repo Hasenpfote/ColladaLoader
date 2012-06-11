@@ -67,7 +67,7 @@ const Matrix44 Matrix44::operator * (const Matrix44& m) const {
 		for(int j = 0; j < 4; j++){
 			ret.m[I(i,j)] = 0.0f;
 			for(int k = 0; k < 4; k++){
-				ret.m[(i,j)] += a[I(i,k)] * ma[I(k,j)];
+				ret.m[I(i,j)] += a[I(i,k)] * ma[I(k,j)];
 			}
 		}
 	}
