@@ -88,7 +88,7 @@ bool Node::load(const daeElementRefArray& dae_elem_ref_array){
 			break;
 		case TransformationElement_Scale:
 			load(values, dynamic_cast<domScale*>(dae_elem));
-			Matrix44Scaling(&current, values[0], values[1], values[2]);
+			mathematics::Matrix44Scaling(&current, values[0], values[1], values[2]);
 			mathematics::Matrix44Mul(&local_to_world, &current, &local_to_world);
 			break;
 		case TransformationElement_Skew:
@@ -97,7 +97,7 @@ bool Node::load(const daeElementRefArray& dae_elem_ref_array){
 			break;
 		case TransformationElement_Translate:
 			load(values, dynamic_cast<domTranslate*>(dae_elem));
-			Matrix44Translation(&current, values[0], values[1], values[2]);
+			mathematics::Matrix44Translation(&current, values[0], values[1], values[2]);
 			mathematics::Matrix44Mul(&local_to_world, &current, &local_to_world);
 			break;
 		default:
