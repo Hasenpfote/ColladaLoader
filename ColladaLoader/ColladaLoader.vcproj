@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;E:\VisualStudioWorkSpace\collada-dom-2.3.1\dom\include&quot;;&quot;E:\VisualStudioWorkSpace\collada-dom-2.3.1\dom\include\1.4&quot;;&quot;E:\VisualStudioWorkSpace\collada-dom-2.3.1\dom\external-libs\boost_1_49_0&quot;;&quot;E:\VisualStudioWorkSpace\collada-dom-2.3.1\dom\external-libs\libxml2-new\include&quot;;&quot;C:\OpenCV-2.3.0\build\install\include&quot;"
+				AdditionalIncludeDirectories="&quot;E:\VisualStudioWorkSpace\collada-dom-2.3.1\dom\include&quot;;&quot;E:\VisualStudioWorkSpace\collada-dom-2.3.1\dom\include\1.4&quot;;&quot;E:\VisualStudioWorkSpace\collada-dom-2.3.1\dom\external-libs\boost_1_49_0&quot;;&quot;E:\VisualStudioWorkSpace\collada-dom-2.3.1\dom\external-libs\libxml2-new\include&quot;;&quot;C:\OpenCV-2.3.0\build\install\include&quot;;E:\GitHubRepository\libmath\libmath"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -118,7 +118,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;E:\VisualStudioWorkSpace\collada-dom-2.3.1\dom\include&quot;;&quot;E:\VisualStudioWorkSpace\collada-dom-2.3.1\dom\include\1.4&quot;;&quot;E:\VisualStudioWorkSpace\collada-dom-2.3.1\dom\external-libs\boost_1_49_0&quot;;&quot;E:\VisualStudioWorkSpace\collada-dom-2.3.1\dom\external-libs\libxml2-new\include&quot;;&quot;C:\OpenCV-2.3.0\build\install\include&quot;;"
+				AdditionalIncludeDirectories="&quot;E:\VisualStudioWorkSpace\collada-dom-2.3.1\dom\include&quot;;&quot;E:\VisualStudioWorkSpace\collada-dom-2.3.1\dom\include\1.4&quot;;&quot;E:\VisualStudioWorkSpace\collada-dom-2.3.1\dom\external-libs\boost_1_49_0&quot;;&quot;E:\VisualStudioWorkSpace\collada-dom-2.3.1\dom\external-libs\libxml2-new\include&quot;;&quot;C:\OpenCV-2.3.0\build\install\include&quot;;E:\GitHubRepository\libmath\libmath"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
